@@ -2,8 +2,8 @@ java_import 'org.elasticsearch.node.NodeBuilder'
 
 module Wonderdog
   class Client
-    
-    def initialize
+
+    def initialize *args
       @node   = NodeBuilder.node_builder.node
       @client = @node.client
     end

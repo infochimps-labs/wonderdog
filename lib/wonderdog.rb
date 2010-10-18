@@ -17,4 +17,5 @@ Dir["#{options.es_home}/lib/*.jar", "#{options.es_home}/lib/sigar/*.jar"].each{|
 
 module Wonderdog
   autoload :Client, 'wonderdog/client'
+  autoload :Indexer,'wonderdog/indexer'
 end
