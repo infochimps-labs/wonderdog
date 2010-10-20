@@ -4,17 +4,17 @@ module Wonderdog
   class Client
 
     def initialize *args
-      @node   = NodeBuilder.node_builder.node
-      @client = @node.client
+    end
+    
+    #
+    # Instantiate a node builder but don't actually return a client
+    #
+    def es_node
+      @es_node ||= NodeBuilder.node_builder
     end
 
-    def close
-      @node.close
-    end
-
-    def cluster_name
-      response = @client.admin.cluster.prepare_state.execute.action_get
-      response.cluster_name.to_string
+    def client
+      raise "Override this in your subclass!"
     end
 
   end

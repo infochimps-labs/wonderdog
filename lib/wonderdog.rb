@@ -1,5 +1,4 @@
 require 'java'
-require 'rubygems'
 require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
 Settings.define :es_home,    :default => '/usr/lib/elasticsearch',               :env_var => 'ES_HOME', :description => 'Path to elasticsearch installation directory'
@@ -17,5 +16,5 @@ Dir["#{options.es_home}/lib/*.jar", "#{options.es_home}/lib/sigar/*.jar"].each{|
 
 module Wonderdog
   autoload :Client, 'wonderdog/client'
-  autoload :Indexer,'wonderdog/indexer'
+  autoload :Parser, 'wonderdog/parser'
 end

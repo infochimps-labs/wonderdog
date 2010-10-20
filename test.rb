@@ -3,15 +3,12 @@
 $: << '/home/jacob/Programming/wonderdog/lib'
 
 require 'wonderdog'
+require 'wonderdog/client'
+require 'wonderdog/indexer'
 
-tweet = {
-  :foo      => "bar",
-  :grobnitz => "baz"
-}
+node   = NodeBuilder.node_builder.node
+client = node.client
 
-indexer = Wonderdog::Indexer.new("twitter2", "tweet")
-indexer.index_one_document(666, tweet)
-#
-# Do some indexing yo
-#
-indexer.close
+index = ["_all"].to_java(:string)
+p client.admin.indices.prepare_refresh(index).execute
+node.close
