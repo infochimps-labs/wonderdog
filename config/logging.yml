@@ -1,8 +1,8 @@
-rootLogger: INFO, console, file
+rootLogger: DEBUG, console, file
 logger:
   jgroups: WARN
   # log action execution errors for easier debugging
-  action : INFO
+  action : DEBUG
 
 appender:
   console:
