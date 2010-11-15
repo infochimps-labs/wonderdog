@@ -40,3 +40,4 @@ pkg
 
 *.rdb
 config/elasticsearch.yml
+build

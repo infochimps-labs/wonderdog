@@ -4,6 +4,7 @@ require 'rubygems'
 require 'wukong'
 require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
+CODE_DIR = File.expand_path(File.dirname(__FILE__))
 Settings.define :src,         :default => "src/ElasticBulkLoader.java",   :description => "Java source file to compile"
 Settings.define :main_class,  :default => "ElasticBulkLoader",            :description => "Main java class to run"
 Settings.define :target,      :default => "build",                        :description => "Build target, this is where compiled classes live"
@@ -45,16 +46,16 @@ end
 task :compile do
   puts "Compiling #{options.src} ..."
   snakized = options.main_class.underscore
-  mkdir_p File.join(options.target, snakized)
-  system "javac -cp #{classpath(options)} -d #{options.target}/#{snakized} #{options.src}"
-  system "jar -cvf  #{options.target}/#{snakized}.jar -C #{options.target}/#{snakized} . "
+  mkdir_p File.join(CODE_DIR, options.target, snakized)
+  system "javac -cp #{classpath(options)} -d #{CODE_DIR}/#{options.target}/#{snakized} #{CODE_DIR}/#{options.src}"
+  system "jar -cvf  #{CODE_DIR}/#{options.target}/#{snakized}.jar -C #{CODE_DIR}/#{options.target}/#{snakized} . "
 end
 
 
 task :run => [:compile] do
   snakized = options.main_class.underscore
-  system "echo Running #{options.hadoop_home}/bin/hadoop jar #{options.target}/#{snakized}.jar #{options.main_class} -libjars #{libjars(options)} #{options.input_data} #{options.output_data}"
-  system "#{options.hadoop_home}/bin/hadoop jar #{options.target}/#{snakized}.jar #{options.main_class} -libjars #{libjars(options)} #{options.input_data} #{options.output_data}"
+  system "echo Running #{options.hadoop_home}/bin/hadoop jar #{CODE_DIR}/#{options.target}/#{snakized}.jar #{options.main_class} -libjars #{libjars(options)} #{options.input_data} #{options.output_data}"
+  system "#{options.hadoop_home}/bin/hadoop jar #{CODE_DIR}/#{options.target}/#{snakized}.jar #{options.main_class} -libjars #{libjars(options)} #{options.input_data} #{options.output_data}"
 end
 
 task :default => [:run]
