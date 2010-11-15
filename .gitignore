@@ -39,3 +39,4 @@ pkg
 ## PROJECT::SPECIFIC
 
 *.rdb
+config/elasticsearch.yml

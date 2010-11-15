@@ -1,0 +1,28 @@
+cloud:
+  aws:
+    access_key: YOUR_AWS_ACCESS_KEY
+    secret_key: YOUR_AWS_SECRET_KEY
+
+path:
+  work: /var/lib/elasticsearch/work
+  logs: /var/log/elasticsearch
+
+cluster:
+  name: test
+
+discovery:
+  type: ec2
+
+index:
+  number_of_shards: 12
+  number_of_replicas: 1
+  merge:
+    policy:
+      merge_factor: 10000
+      use_compound_file: false
+    scheduler:
+      max_thread_count: 32
+  engine:
+    robin:
+      refresh_interval: -1
+      ram_buffer_size: 512mb
