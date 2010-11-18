@@ -1,8 +1,18 @@
 rootLogger: DEBUG, console, file
+
 logger:
-  jgroups: WARN
   # log action execution errors for easier debugging
-  action : DEBUG
+  action :      DEBUG
+
+  jgroups:      WARN
+  index:
+    shard:
+      recovery: DEBUG
+    gateway:    DEBUG
+    engine:     DEBUG
+    merge:      DEBUG
+  gateway:      DEBUG
+  discovery:    DEBUG
 
 appender:
   console:

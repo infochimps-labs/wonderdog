@@ -1,28 +1,227 @@
+#
+# ElasticSearch config file
+#
+
+# Necessary if you will use either of
+# * the ec2 discovery module: for finding peers
+# * the s3 gateway module, for pushing indices to an s3 mirror.
+# Read more: http://www.elasticsearch.com/docs/elasticsearch/cloud/
+# 
 cloud:
   aws:
-    access_key: YOUR_AWS_ACCESS_KEY
-    secret_key: YOUR_AWS_SECRET_KEY
-
-path:
-  work: /var/lib/elasticsearch/work
-  logs: /var/log/elasticsearch
+    access_key:                 YOUR_ACCESS_KEY
+    secret_key:                 YOUR_SECRET_KEY
 
 cluster:
-  name: test
+  name:                         YOUR_CLUSTER_NAME
 
-discovery:
-  type: ec2
+# File paths. Best to spread the write load out.
+path:
+  work:                         /mnt/elasticsearch/work
+  logs:                         /var/log/elasticsearch
+    
+# http://www.elasticsearch.com/docs/elasticsearch/modules/node/
+node:
+  # # node.data: is this a data esnode (stores, indexes data)?
+  data:                         true
+  
+# http://www.elasticsearch.com/docs/elasticsearch/modules/http/
+http:
+  # http.enabled: is this a query esnode (has http interface, dispatches/gathers queries)?
+  # enabled:                    true
+  # port:                       9200-9300
+  # max_content_length:         100mb
 
+gateway:
+  # The gateway set on the node level will automatically control the index
+  # gateway to use. For example, if the fs gateway is used, then automatically,
+  # each index created on the node will also use its own respective index level
+  # fs gateway. In this case, if in an index should not persist its state, it
+  # should be explicitly set to none.
+  #
+  # Set gateway.type to one of: [none, local, fs, hadoop, cloud]
+  #
+  type:                         fs
+  # recovery begins when recover_after_nodes are present and then either
+  # recovery_after_time has passed *or* expected_nodes have shown up.
+  recover_after_nodes:          1
+  recovery_after_time:          2m          # 5m
+  expected_nodes:               1           # 2
+  
+  # # Settings for gateway.type = s3
+  # s3:
+  #   bucket:                   BUCKET_NAME
+  
+  fs:
+    # By default, uses the 'path.work' directory Note, the work directory is
+    # considered a temporal directory with ElasticSearch (meaning it is safe
+    # to rm -rf it), the default location of the persistent gateway in work
+    # intentional, it should be changed.
+    #
+    # When explicitly specifying the gateway.fs.location, each node will
+    # append its cluster.name to the provided location. It means that the
+    # location provided can safely support several clusters.
+    #
+    # The file system gateway automatically sets for each index created to use
+    # an fs index gateway. The location specified using gateway.fs.location
+    # will automatically be used in this case to store index level data
+    # (appended by the index name).
+    location:                   /mnt/elasticsearch/fs
+  
 index:
-  number_of_shards: 12
-  number_of_replicas: 1
+  number_of_shards:             6
+  number_of_replicas:           1
+  translog:
+    # A shard is flushed to local disk once this number of operations accumulate in the translog. defaults to 5000
+    flush_threshold:            50000     # 5000
   merge:
     policy:
-      merge_factor: 10000
-      use_compound_file: false
+      # Determines how often segment indices are merged by index operation. With
+      # smaller values, less RAM is used while indexing, and searches on
+      # unoptimized indices are faster, but indexing speed is slower. With
+      # larger values, more RAM is used during indexing, and while searches on
+      # unoptimized indices are slower, indexing is faster. Thus larger values
+      # (greater than 10) are best for batch index creation, and smaller values
+      # (lower than 10) for indices that are interactively maintained. Defaults
+      # to 10.
+      merge_factor:             10000
+      # Use the compound file format. If not set, controlled by the actually
+      # store used, this is because the compound format was created to reduce
+      # the number of open file handles when using file based storage. The file
+      # system based ones default to true which others default to false. Even
+      # with file system based ones, consider increasing the number of open file
+      # handles and setting this to false for better performance
+      use_compound_file:        false
+      # # A size setting type which sets the minimum size for the lowest level
+      # # segments. Any segments below this size are considered to be on the same
+      # # level (even if they vary drastically in size) and will be merged
+      # # whenever there are mergeFactor of them. This effectively truncates the
+      # # “long tail” of small segments that would otherwise be created into a
+      # # single level. If you set this too large, it could greatly increase the
+      # # merging cost during indexing (if you flush many small
+      # # segments). Defaults to 1.6mb
+      # min_merge_size:           1.6mb
+      # # Largest segment (by total byte size) that may be merged with other
+      # # segments. Defaults to unbounded.
+      # max_merge_size:
+      # # Largest segment (by document count) that may be merged with other
+      # # segments. Defaults to unbounded
+      # max_merge_docs
     scheduler:
-      max_thread_count: 32
+      max_thread_count:         32
   engine:
     robin:
-      refresh_interval: -1
-      ram_buffer_size: 512mb
+      # How often to schedule the refresh operation (the same one the Refresh
+      # API, which enables near real time search).  Default '1s'; set to -1 to
+      # disable automatic refresh (you must instead initiate refresh via API)
+      refresh_interval:         -1
+      # Temporal “index” stored in by Lucene in memory. 64mb default
+      ram_buffer_size:          512mb
+      # Set the interval between indexed terms. Large values cause less memory
+      # to be used by a reader / searcher, but slow random-access to
+      # terms. Small values cause more memory to be used by a reader / searcher,
+      # and speed random-access to terms. Defaults to 128.
+      term_index_interval:      128
+  gateway:
+    # The index.gateway.snapshot_interval is a time setting allowing to
+    # configure the interval at which snapshotting of the index shard to the
+    # gateway will take place. Note, only primary shards start this scheduled
+    # snapshotting process. It defaults to 10s, and can be disabled by setting
+    # it to -1.
+    snapshot_interval:          10s
+    # When a primary shard is shut down explicitly (not relocated), the
+    # index.gateway.snapshot_on_close flag can control if while shutting down, a
+    # gateway snapshot should be performed. It defaults to true.
+    snapshot_on_close:          true
+
+# http://www.elasticsearch.com/docs/elasticsearch/modules/node/network/      
+network:
+  # you can use bind_host and publish_host if these should differ
+  host:                         _local_
+  #
+  # tcp:
+  #   no_delay:                 true
+  #   keep_alive:               ~
+  #   reuse_address             true
+  #   send_buffer_size          ~
+  #   receive_buffer_size:      ~
+
+thrift:
+  port: 
+
+# http://www.elasticsearch.com/docs/elasticsearch/modules/transport/
+transport:
+  tcp:
+    port:                       9300
+    connect_timeout:            1s
+    # # enable lzf compression in esnode-esnode communication?
+    # compress:                 false
+
+# http://www.elasticsearch.com/docs/elasticsearch/modules/jmx/
+jmx:
+  # # Create an RMI connector?
+  # create_connector:           true
+  # port:                       9400-9500
+  # domain:                     elasticsearch
+
+# http://www.elasticsearch.com/docs/elasticsearch/modules/threadpool/
+threadpool:
+  # #
+  # # threadpool.type should be one of [cached, scaling, blocking]:
+  # #
+  # # * Cached:  An unbounded thread pool that reuses previously constructed threads.
+  # # * Scaling: A bounded thread pool that reuses previously created free threads.
+  # # * Blocking: A bounded thread pool that reuses previously created free
+  # #   threads. Pending requests block for an available thread (different than
+  # #   the scaling one, where the request is added to a queue and does not
+  # #   block).
+  # #
+  # type:                       cached
+
+discovery:
+  # set to 'zen' or 'ec2'
+  type:                         ec2
+  
+  # Settings for discovery.type = ec2
+  # Be sure to set your cloud keys if you're using ec2
+  ec2:
+    # security groups used for discovery
+    groups:                     hoolock
+    # require *all* (false) or *any* (true) of those groups?
+    any_group:                  true
+    # private_ip, public_ip, private_dns, public_dns
+    host_type:                  private_ip
+    availability_zones:         us-east-1d
+
+  # Settings for discovery.type = zen
+  zen:
+    # # How should gossip be conducted?
+    # ping:
+    #   multicast:
+    #     enabled:              false
+    #     # group:              224.2.2.4
+    #     # port:               54328
+    #     # ttl:                3
+    #     # address:            null
+    #   unicast:
+    #     # # Either a YAML array or a comma delimited string.
+    #     # # Each value is either in the form of host:port, or in the form of host[port1-port2].
+    #     # hosts:
+    # # Zen Master Election
+    #
+    # # As part of the initial ping process a master of the cluster is either
+    # # elected or joined to. This is done automatically. The
+    # # discovery.zen.initial_ping_timeout (which defaults to 3s) allows to
+    # # configure the election to handle cases of slow or congested networks
+    # # (higher values assure less chance of failure).
+    # initial_ping_timeout:     3s
+    # # Allow node to become master?  Note, once a node is a client node
+    # # (node.client = true), it will not be allowed to become a master
+    # # (zen.master is automatically set to false).
+    # master:                   ~
+    #
+    # # Zen Fault detection:
+    # fd:
+    #   ping_interval:          1s
+    #   ping_timeout:           30s
+    #   ping_retries            3
