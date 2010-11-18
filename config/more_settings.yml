@@ -1,0 +1,60 @@
+#
+# This file isn't read for any reason -- it's
+# a dumping ground for annotated config sections
+#
+
+
+gateway:  
+  # Settings for gateway.type = s3
+  s3:
+    bucket:                   infochimps-elasticsearch
+  
+gateway:
+  fs:
+    # By default, uses the 'path.work' directory Note, the work directory is
+    # considered a temporal directory with ElasticSearch (meaning it is safe
+    # to rm -rf it), the default location of the persistent gateway in work
+    # intentional, it should be changed.
+    #
+    # When explicitly specifying the gateway.fs.location, each node will
+    # append its cluster.name to the provided location. It means that the
+    # location provided can safely support several clusters.
+    #
+    # The file system gateway automatically sets for each index created to use
+    # an fs index gateway. The location specified using gateway.fs.location
+    # will automatically be used in this case to store index level data
+    # (appended by the index name).
+    location:                   /mnt2/elasticsearch/fs
+
+discovery:
+
+  zen:
+    # == How should gossip be conducted?
+    ping:
+      multicast:
+        enabled:              false
+        # group:              224.2.2.4
+        # port:               54328
+        # ttl:                3
+        # address:            null
+      unicast:
+        # # Either a YAML array or a comma delimited string.
+        # # Each value is either in the form of host:port, or in the form of host[port1-port2].
+        # hosts:
+    # == Zen master election:
+    # As part of the initial ping process a master of the cluster is either
+    # elected or joined to. This is done automatically. The
+    # discovery.zen.initial_ping_timeout (which defaults to 3s) allows to
+    # configure the election to handle cases of slow or congested networks
+    # (higher values assure less chance of failure).
+    initial_ping_timeout:     3s
+    # # Allow node to become master?  Note, once a node is a client node
+    # # (node.client = true), it will not be allowed to become a master
+    # # (zen.master is automatically set to false).
+    # master:                   ~
+    # == Zen Fault detection:
+    fd:
+      ping_interval:          1s
+      ping_timeout:           30s
+      ping_retries            3
+  

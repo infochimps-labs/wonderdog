@@ -53,7 +53,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
         
     public void map(Text key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
       add_tweet_to_bulk(value);
-      if (randgen.nextDouble() < 0.01) { output.collect(key, value); }
+      if (randgen.nextDouble() < 0.001) { output.collect(key, value); }
     }
 
     public void add_tweet_to_bulk(Text value) {
@@ -79,7 +79,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
         currentRequest.add(Requests.indexRequest("foo").type("tweet").id(fields[0]).create(true).source(builder));
         processBulkIfNeeded();
       } catch (Exception e) {
-        // System.out.println("There was some sort of problem here in trying to create a new index request");
+        System.out.println("There was some sort of problem here in trying to create a new index request");
       }
     }
 
@@ -92,7 +92,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
           long startTime = System.currentTimeMillis();
           BulkResponse response = currentRequest.execute().actionGet();
           totalBulkTime.addAndGet(System.currentTimeMillis() - startTime);
-          if (randgen.nextDouble() < 0.01) {
+          if (randgen.nextDouble() < 0.001) {
             System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + totalBulkTime.get() + "ms]"+" for ["+ (float)(1000.0*totalBulkItems.get())/totalBulkTime.get() + "rec/s]");
           }
           if (response.hasFailures()) {
