@@ -50,6 +50,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
     private AtomicLong totalBulkTime  = new AtomicLong();
     private AtomicLong totalBulkItems = new AtomicLong();
     private Random     randgen        = new Random();
+    private long       runStartTime   = System.currentTimeMillis();
         
     public void map(Text key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
       add_tweet_to_bulk(value);
@@ -84,16 +85,14 @@ public class ElasticBulkLoader extends Configured implements Tool {
     }
 
     private void processBulkIfNeeded() {
-      
       totalBulkItems.incrementAndGet();
-      
       if (currentRequest.numberOfActions() >= bulkSize) {
         try {
           long startTime = System.currentTimeMillis();
           BulkResponse response = currentRequest.execute().actionGet();
           totalBulkTime.addAndGet(System.currentTimeMillis() - startTime);
-          if (randgen.nextDouble() < 0.001) {
-            System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + totalBulkTime.get() + "ms]"+" for ["+ (float)(1000.0*totalBulkItems.get())/totalBulkTime.get() + "rec/s]");
+          if (randgen.nextDouble() < 0.005) {
+            System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + (totalBulkTime.get()/1000) + "s] of indexing"+"[" + ((System.currentTimeMillis() - runStartTime)/1000) + "s] of wall clock"+" for ["+ (float)(1000.0*totalBulkItems.get())/(System.currentTimeMillis() - runStartTime) + "rec/s]");
           }
           if (response.hasFailures()) {
             System.out.println("failed to execute" + response.buildFailureMessage());
@@ -102,6 +101,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
           System.out.println("Bulk request failed: " + e.getMessage());
           throw new RuntimeException(e);
         }
+        // Create the next (empty) bulk request
         currentRequest = client.prepareBulk();
       }
     }
@@ -121,6 +121,9 @@ public class ElasticBulkLoader extends Configured implements Tool {
       // client = node.client();
       //
       client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9300));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9301));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9302));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9303));
 
       try {
         client.admin().indices().prepareCreate("foo").execute().actionGet();
@@ -129,11 +132,15 @@ public class ElasticBulkLoader extends Configured implements Tool {
           System.out.println("Index foo already exists");
         }
       }
+      // Start the first, empty bulk request
       currentRequest = client.prepareBulk();
     }
 
+    //
+    // This happens at the very end of the map task
+    //
     public void close() {
-      client.admin().indices().prepareRefresh("foo").execute().actionGet();
+      // client.admin().indices().prepareRefresh("foo").execute().actionGet();
       client.close();
       // node.close();
        System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + totalBulkTime.get() + "ms]");

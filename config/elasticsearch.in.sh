@@ -1,4 +1,11 @@
+export ES_CONF_DIR=/etc/elasticsearch
+
+# :$ES_HOME/plugins/transport-thrift.zip
+export CLASSPATH=$ES_HOME/plugins/cloud-aws.zip
 CLASSPATH=$CLASSPATH:$ES_HOME/lib/elasticsearch-0.11.0.jar:$ES_HOME/lib/*:$ES_HOME/lib/sigar/*
+
+export ES_WORK_DIR=${ES_WORK_DIR-/mnt/elasticsearch/work}
+export ES_DATA_DIR=${ES_DATA_DIR-/mnt/elasticsearch/data}
 
 if [ "x$ES_MIN_MEM" = "x" ]; then
   ES_MIN_MEM=256m
@@ -26,13 +33,13 @@ JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=$ES_HOME/work/heap"
 
 JAVA_OPTS="$JAVA_OPTS -XX:+UseCompressedOops"
 
+JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Djava.rmi.server.hostname=ec2-184-73-69-18.compute-1.amazonaws.com "
+
+
 # More options to consider LATER
 # java.net.preferIPv4Stack=true: Better OOTB experience, especially with jgroups
 #  -XX:CMSInitiatingOccupancyFraction=88 
-#
 
-export JAVA_OPTS ES_MAX_MEM ES_MIN_MEM
+ES_JAVA_OPTS="$ES_JAVA_OPTS -Des.path.data=$ES_DATA_DIR -Des.path.work=$ES_WORK_DIR"
 
-#
-# ES_CONF_DIR=$HOME/Programming/wonderdog/config ;sudo -u hadoop ES_INCLUDE=$ES_CONF_DIR/elasticsearch.in.sh /usr/lib/elasticsearch/bin/elasticsearch -Des.config=$ES_CONF_DIR/elasticsearch.yml
-#
+export JAVA_OPTS ES_JAVA_OPTS ES_MAX_MEM ES_MIN_MEM

@@ -4,7 +4,6 @@ logger:
   # log action execution errors for easier debugging
   action :      DEBUG
 
-  jgroups:      WARN
   index:
     shard:
       recovery: DEBUG
@@ -13,6 +12,8 @@ logger:
     merge:      DEBUG
   gateway:      DEBUG
   discovery:    DEBUG
+  jmx:          DEBUG
+  
 
 appender:
   console:

@@ -5,13 +5,13 @@ require 'wukong'
 require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
 CODE_DIR = File.expand_path(File.dirname(__FILE__))
-Settings.define :src,         :default => "src/ElasticBulkLoader.java",   :description => "Java source file to compile"
-Settings.define :main_class,  :default => "ElasticBulkLoader",            :description => "Main java class to run"
-Settings.define :target,      :default => "build",                        :description => "Build target, this is where compiled classes live"
-Settings.define :input_data,  :default => "/tmp/in/tweet-1k.tsv",         :description => "Full hdfs path to input data"
-Settings.define :output_data, :default => "/tmp/foo",                     :description => "Full hdfs path to output data"
-Settings.define :hadoop_home, :default => "/usr/lib/hadoop",              :description => "Path to hadoop installation",       :env_var => "HADOOP_HOME"
-Settings.define :es_home,     :default => "/usr/lib/elasticsearch",       :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
+Settings.define :src,         :default => "src/ElasticBulkLoader.java",     :description => "Java source file to compile"
+Settings.define :main_class,  :default => "ElasticBulkLoader",              :description => "Main java class to run"
+Settings.define :target,      :default => "build",                          :description => "Build target, this is where compiled classes live"
+Settings.define :input_data,  :default => "/tmp/in/tweet-1k.tsv",           :description => "Full hdfs path to input data"
+Settings.define :output_data, :default => "/tmp/foo",                       :description => "Full hdfs path to output data"
+Settings.define :hadoop_home, :default => "/usr/lib/hadoop",                :description => "Path to hadoop installation",       :env_var => "HADOOP_HOME"
+Settings.define :es_home,     :default => "/usr/local/share/elasticsearch", :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
 Settings.resolve!
 options = Settings.dup
 
