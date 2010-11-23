@@ -1,5 +1,8 @@
 rootLogger: DEBUG, console, file
 
+#
+# Put the name of any module -- using its config path -- in the section below.
+#
 logger:
   # log action execution errors for easier debugging
   action :      DEBUG

@@ -1,11 +1,9 @@
-export ES_CONF_DIR=/etc/elasticsearch
-
-# :$ES_HOME/plugins/transport-thrift.zip
-export CLASSPATH=$ES_HOME/plugins/cloud-aws.zip
-CLASSPATH=$CLASSPATH:$ES_HOME/lib/elasticsearch-0.11.0.jar:$ES_HOME/lib/*:$ES_HOME/lib/sigar/*
-
+export ES_CONF_DIR=${ES_WORK_DIR-/etc/elasticsearch}
 export ES_WORK_DIR=${ES_WORK_DIR-/mnt/elasticsearch/work}
 export ES_DATA_DIR=${ES_DATA_DIR-/mnt/elasticsearch/data}
+
+export CLASSPATH=$ES_HOME/plugins/cloud-aws.zip
+CLASSPATH=$CLASSPATH:$ES_HOME/lib/elasticsearch-0.11.0.jar:$ES_HOME/lib/*:$ES_HOME/lib/sigar/*
 
 if [ "x$ES_MIN_MEM" = "x" ]; then
   ES_MIN_MEM=256m
@@ -33,8 +31,8 @@ JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=$ES_HOME/work/heap"
 
 JAVA_OPTS="$JAVA_OPTS -XX:+UseCompressedOops"
 
+# ensures JMX accessible from outside world
 JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Djava.rmi.server.hostname=ec2-184-73-69-18.compute-1.amazonaws.com "
-
 
 # More options to consider LATER
 # java.net.preferIPv4Stack=true: Better OOTB experience, especially with jgroups

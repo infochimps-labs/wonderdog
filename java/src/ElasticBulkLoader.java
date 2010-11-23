@@ -125,6 +125,16 @@ public class ElasticBulkLoader extends Configured implements Tool {
       client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9302));
       client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9303));
 
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9300));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9301));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9302));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9303));
+
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9300));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9301));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9302));
+      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9303));
+  
       try {
         client.admin().indices().prepareCreate("foo").execute().actionGet();
       } catch (Exception e) {
