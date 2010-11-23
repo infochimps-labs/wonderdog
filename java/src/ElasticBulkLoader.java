@@ -112,28 +112,29 @@ public class ElasticBulkLoader extends Configured implements Tool {
     public void configure(JobConf job) {
       this.jobconf = job;
 
-      bulkSize = 5;
+      bulkSize = 1000;
       System.out.println("bulk size set to "+bulkSize);
       System.setProperty("es.path.plugins","/usr/lib/elasticsearch/plugins");
       System.setProperty("es.config","/etc/elasticsearch/elasticsearch.yml");
       
-      // node = NodeBuilder.nodeBuilder().client(true).data(false).node();
-      // client = node.client();
+      node = NodeBuilder.nodeBuilder().client(true).node();
+      client = node.client();
       //
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9300));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9301));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9302));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9303));
-
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9300));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9301));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9302));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9303));
-
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9300));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9301));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9302));
-      client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9303));
+      // client = new TransportClient();
+      // client.addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9300));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9301));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9302));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9303));
+      // 
+      // client.addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9300));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9301));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9302));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9303));
+      // 
+      // client.addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9300));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9301));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9302));
+      // client.addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9303));
   
       try {
         client.admin().indices().prepareCreate("foo").execute().actionGet();
