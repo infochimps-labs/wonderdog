@@ -22,6 +22,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
@@ -45,12 +46,15 @@ import org.elasticsearch.client.transport.TransportClient;
 
 public class ElasticBulkLoader extends Configured implements Tool {
 
-  public static class IndexMapper extends Mapper<Text, Text, Text, Text> {
+  public static class IndexMapper extends Mapper<LongWritable, Text, Text, Text> {
       
     private Node node;
     private Client client;
     private String indexName;
     private int bulkSize;
+    private int keyField;
+    private String objType;
+    private String[] fieldNames;
     private volatile BulkRequestBuilder currentRequest;
 
     // Used for bookkeeping purposes
@@ -59,36 +63,18 @@ public class ElasticBulkLoader extends Configured implements Tool {
     private Random     randgen        = new Random();
     private long       runStartTime   = System.currentTimeMillis();
 
-    public void map(Text key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-      add_tweet_to_bulk(value);
-      if (randgen.nextDouble() < 0.001) { output.collect(key, value); }
-    }
-
-    public void add_tweet_to_bulk(Text value) {
-      String[] fields = value.toString().split("\t"); // Raw fields of tweet object
-      try {
+    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        String[] fields = value.toString().split("\t");
         XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
-        builder.field("tweet_id",                fields[0]);
-        builder.field("created_at",              fields[1]);
-        builder.field("user_id",                 fields[2]);
-        builder.field("screen_name",             fields[3]);
-        builder.field("search_id",               fields[4]);
-        builder.field("in_reply_to_user_id",     fields[5]);
-        builder.field("in_reply_to_screen_name", fields[6]);
-        builder.field("in_reply_to_search_id",   fields[7]);
-        builder.field("in_reply_to_status_id",   fields[8]);
-        builder.field("text",                    fields[9]);
-        // builder.field("source",               fields[10]);
-        // builder.field("lang",                 fields[11]);
-        // builder.field("lat",                  fields[12]);
-        // builder.field("lng",                  fields[13]);
-                
+        for(int i = 0; i < fields.length; i++) {
+            if (i < fieldNames.length) {
+                builder.field(fieldNames[i], fields[i]);
+            }
+        }
         builder.endObject();
-        currentRequest.add(Requests.indexRequest("foo").type("tweet").id(fields[0]).create(true).source(builder));
+        currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[keyField]).create(true).source(builder));
         processBulkIfNeeded();
-      } catch (Exception e) {
-        System.out.println("There was some sort of problem here in trying to create a new index request");
-      }
+        if (randgen.nextDouble() < 0.001) { context.write(new Text(fields[keyField]), new Text("Indexed") ); }
     }
 
     private void processBulkIfNeeded() {
@@ -116,7 +102,9 @@ public class ElasticBulkLoader extends Configured implements Tool {
         Configuration conf = context.getConfiguration();
         this.indexName = conf.get("elasticsearch.index_name");
         this.bulkSize  = Integer.parseInt(conf.get("elasticsearch.bulk_size"));
-        this.fieldNames = conf.get("elasticsearch.field_names");
+        this.fieldNames = conf.get("elasticsearch.field_names").split(",");
+        this.keyField   = Integer.parseInt(conf.get("elasticsearch.key_field"));
+        this.objType    = conf.get("elasticsearch.object_type");
         System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins_dir"));
         System.setProperty("es.config",conf.get("elasticsearch.config_yaml"));
 
