@@ -1,0 +1,95 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'wukong'
+require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
+
+Settings.define :index,     :default => "foo",  :description => "Index to write data to"
+Settings.define :bulk_size, :default => "1000", :description => "Number of records per bulk request"
+Settings.define :es_home,   :default => "/usr/local/share/elasticsearch",       :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
+Settings.define :es_config, :default => "/etc/elasticsearch/elasticsearch.yml", :description => "Path to elasticsearch config"
+Settings.define :transport_client, :default => false, :description => "Should we use transport clients?"
+Settings.define :hosts,       :default => "10.195.10.207,10.204.227.21", :description => "Comma separated list of hosts to pass in for tranport clients"
+Settings.define :inital_port, :default => "9300", :description => "Initial port to use for trasport client, will be incremented"
+Settings.define :field_names, :default => "rsrc,tweet_id,created_at,user_id,screen_name,search_id,in_reply_to_user_id,in_reply_to_screen_name,in_reply_to_search_id,in_reply_to_status_id,text,source,lang,lat,lng,retweeted_count,rt_of_user_id,rt_of_screen_name,rt_of_tweet_id,contributors", :description => "Comma separated list of field names"
+Settings.define :rm, :default => false, :description => "Remove existing output?"
+class Wonderdog
+  attr_accessor :options
+  def initialize
+    @options = Settings.dup
+  end
+
+  def execute
+    output = options.rest.first
+    remove_output(output) if options.rm
+    system %Q{ echo #{hdp_cmd} }
+    system %Q{ #{hdp_cmd} }
+  end
+
+  def hdp_cmd
+    [
+      "HADOOP_CLASSPATH=#{hadoop_classpath}",
+      "#{options.hadoop_home}/bin/hadoop jar #{run_jar}",
+      mainclass,
+      reduce_tasks,
+      map_tasks,
+      "-Delasticsearch.initial_port=#{options.initial_port}",
+      "-Delasticsearch.hosts=#{options.hosts}",
+      "-Delasticsearch.index_name=#{options.index}",
+      "-Delasticsearch.field_names=#{options.field_names}",
+      "-Delasticsearch.bulk_size=#{options.bulk_size}",
+      "-Delasticsearch.config_yaml=#{options.es_config}",
+      "-Delasticsearch.plugins_dir=#{options.es_home}/plugins",
+      transport_client,
+      "-libjars #{libjars}",
+      "#{options.rest.first}",
+      "#{options.rest.last}"
+    ].flatten.compact.join(" \t\\\n  ")
+  end
+
+  def hadoop_classpath options
+    cp = ["."]
+    Dir[
+      "/etc/elasticsearch/elasticsearch.yml",
+      "#{options.es_home}/plugins/*/*.jar",
+      "#{options.es_home}/lib/*.jar",
+      "#{options.es_home}/lib/sigar/*.jar"
+    ].each{|jar| cp << jar}
+    cp.join(':')
+  end
+
+  def run_jar
+    File.dirname(File.expand_path(__FILE__))+'/../build/elastic_bulk_loader.jar'
+  end
+
+  def libjars options
+    libjars = []
+    Dir[
+      "/etc/elasticsearch/elasticsearch.yml",
+      "#{options.es_home}/plugins/*/*.jar",
+      "#{options.es_home}/lib/*.jar"
+    ].each{|jar| libjars << jar}
+    libjars.join(',')
+  end
+
+  def reduce_tasks
+    return unless options.reduce_tasks
+    "-Dmapred.reduce.tasks=#{options.reduce_tasks}"
+  end
+
+  def transport_client
+    return "-Delasticsearch.transport_client=0" unless options.transport_client
+    return "-Delasticsearch.transport_client=1"
+  end
+
+  def map_tasks
+    return unless options.map_tasks
+    "-Dmapred.map.tasks=#{options.map_tasks}"
+  end
+
+  def remove_output output
+    system %Q{ hdp-rm -r #{output} }
+  end
+
+end
+
