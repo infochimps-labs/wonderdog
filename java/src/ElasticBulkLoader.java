@@ -112,6 +112,10 @@ public class ElasticBulkLoader extends Configured implements Tool {
     public void configure(JobConf job) {
       this.jobconf = job;
 
+      //
+      // Need to make this NOT run speculative mappers
+      //
+
       bulkSize = 1000;
       System.out.println("bulk size set to "+bulkSize);
       System.setProperty("es.path.plugins","/usr/lib/elasticsearch/plugins");
