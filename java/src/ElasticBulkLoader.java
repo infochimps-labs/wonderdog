@@ -15,9 +15,14 @@ import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
@@ -40,48 +45,36 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.client.transport.TransportClient;
 
 public class ElasticBulkLoader extends Configured implements Tool {
-  public static class Map extends MapReduceBase implements Mapper<Text, Text, Text, Text> {
-    private JobConf jobconf;
+
+  public static class IndexMapper extends Mapper<LongWritable, Text, Text, Text> {
+      
     private Node node;
     private Client client;
-    private volatile BulkRequestBuilder currentRequest;
+    private String indexName;
     private int bulkSize;
+    private int keyField;
+    private String objType;
+    private String[] fieldNames;
+    private volatile BulkRequestBuilder currentRequest;
 
+    // Used for bookkeeping purposes
     private AtomicLong totalBulkTime  = new AtomicLong();
     private AtomicLong totalBulkItems = new AtomicLong();
     private Random     randgen        = new Random();
     private long       runStartTime   = System.currentTimeMillis();
-        
-    public void map(Text key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-      add_tweet_to_bulk(value);
-      if (randgen.nextDouble() < 0.001) { output.collect(key, value); }
-    }
 
-    public void add_tweet_to_bulk(Text value) {
-      String[] fields = value.toString().split("\t"); // Raw fields of tweet object
-      try {
+    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        String[] fields = value.toString().split("\t");
         XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
-        builder.field("tweet_id",                fields[0]);
-        builder.field("created_at",              fields[1]);
-        builder.field("user_id",                 fields[2]);
-        builder.field("screen_name",             fields[3]);
-        builder.field("search_id",               fields[4]);
-        builder.field("in_reply_to_user_id",     fields[5]);
-        builder.field("in_reply_to_screen_name", fields[6]);
-        builder.field("in_reply_to_search_id",   fields[7]);
-        builder.field("in_reply_to_status_id",   fields[8]);
-        builder.field("text",                    fields[9]);
-        // builder.field("source",               fields[10]);
-        // builder.field("lang",                 fields[11]);
-        // builder.field("lat",                  fields[12]);
-        // builder.field("lng",                  fields[13]);
-                
+        for(int i = 0; i < fields.length; i++) {
+            if (i < fieldNames.length) {
+                builder.field(fieldNames[i], fields[i]);
+            }
+        }
         builder.endObject();
-        currentRequest.add(Requests.indexRequest("foo").type("tweet").id(fields[0]).create(true).source(builder));
+        currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[keyField]).create(true).source(builder));
         processBulkIfNeeded();
-      } catch (Exception e) {
-        System.out.println("There was some sort of problem here in trying to create a new index request");
-      }
+        if (randgen.nextDouble() < 0.001) { context.write(new Text(fields[keyField]), new Text("Indexed") ); }
     }
 
     private void processBulkIfNeeded() {
@@ -101,78 +94,75 @@ public class ElasticBulkLoader extends Configured implements Tool {
           System.out.println("Bulk request failed: " + e.getMessage());
           throw new RuntimeException(e);
         }
-        // Create the next (empty) bulk request
         currentRequest = client.prepareBulk();
       }
     }
 
-    //
-    // This happens at the very beginning of the map task
-    //
-    public void configure(JobConf job) {
-      this.jobconf = job;
+    protected void setup(org.apache.hadoop.mapreduce.Mapper.Context context) throws IOException, InterruptedException {
+        Configuration conf = context.getConfiguration();
+        this.indexName = conf.get("elasticsearch.index_name");
+        this.bulkSize  = Integer.parseInt(conf.get("elasticsearch.bulk_size"));
+        this.fieldNames = conf.get("elasticsearch.field_names").split(",");
+        this.keyField   = Integer.parseInt(conf.get("elasticsearch.key_field"));
+        this.objType    = conf.get("elasticsearch.object_type");
+        System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins_dir"));
+        System.setProperty("es.config",conf.get("elasticsearch.config_yaml"));
 
-      //
-      // Need to make this NOT run speculative mappers
-      //
-
-      bulkSize = 1000;
-      System.out.println("bulk size set to "+bulkSize);
-      System.setProperty("es.path.plugins","/usr/lib/elasticsearch/plugins");
-      System.setProperty("es.config","/etc/elasticsearch/elasticsearch.yml");
-      
-      node = NodeBuilder.nodeBuilder().client(true).node();
-      client = node.client();
-      //
-      // client = new TransportClient();
-      // client.addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9300));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9301));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9302));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.195.10.207", 9303));
-      // 
-      // client.addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9300));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9301));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9302));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.204.227.21", 9303));
-      // 
-      // client.addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9300));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9301));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9302));
-      // client.addTransportAddress(new InetSocketTransportAddress("10.243.146.31", 9303));
-  
-      try {
-        client.admin().indices().prepareCreate("foo").execute().actionGet();
-      } catch (Exception e) {
-        if (ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException) {
-          System.out.println("Index foo already exists");
+        // start client type
+        Integer transportClient = Integer.parseInt(conf.get("elasticsearch.transport_client"));
+        if(transportClient == 1) {
+            Integer initialPort = Integer.parseInt(conf.get("elasticsearch.initial_port"));
+            String[] hosts      = conf.get("elasticsearch.hosts").split(",");
+            start_transport_client(hosts, initialPort);
+        } else {
+            start_embedded_node();
         }
-      }
-      // Start the first, empty bulk request
-      currentRequest = client.prepareBulk();
+        initialize_index(indexName);
+        currentRequest = client.prepareBulk();
+    } 
+
+    public void close() {
+      client.close();
+      System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + totalBulkTime.get() + "ms]");
     }
 
-    //
-    // This happens at the very end of the map task
-    //
-    public void close() {
-      // client.admin().indices().prepareRefresh("foo").execute().actionGet();
-      client.close();
-      // node.close();
-       System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + totalBulkTime.get() + "ms]");
+    private void initialize_index(String indexName) {
+        try {
+            client.admin().indices().prepareCreate(indexName).execute().actionGet();
+        } catch (Exception e) {
+            if (ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException) {
+                System.out.println("Index ["+indexName+"] already exists");
+            }
+        }
     }
+    
+    private void refresh_index(String indexName) {
+        client.admin().indices().prepareRefresh(indexName).execute().actionGet();
+    }
+
+    private void start_embedded_node() {
+        this.node   = NodeBuilder.nodeBuilder().client(true).node();
+        this.client = node.client();
+    }
+
+    private void start_transport_client(String[] hosts, Integer initialPort) {
+    //     this.client = new TransportClient();
+    //     for(String host : hosts) {
+    //         client.addTransportAddress(new InetSocketTransportAddress(host, initialPort));
+    //         initialPort += 1;
+    //     }
+    }
+    
   }
 
-  // public static void runJob(String[] args)
   public int run(String[] args) throws Exception {
-    JobConf conf = new JobConf(getConf(), ElasticBulkLoader.class);
-
-    GenericOptionsParser parser = new GenericOptionsParser(conf,args);
-    conf.setJobName("ElasticBulkLoader");
-    conf.setNumReduceTasks(0);
-    conf.setInputFormat(KeyValueTextInputFormat.class);
-    conf.setMapperClass(Map.class);
-    conf.setOutputKeyClass(Text.class);
-    conf.setOutputValueClass(Text.class);
+    Job job                    = new Job(getConf());
+    job.setJarByClass(ElasticBulkLoader.class);
+    job.setJobName("ElasticBulkLoader");
+    job.setMapperClass(IndexMapper.class);
+    job.setNumReduceTasks(0);
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(Text.class);
 
     List<String> other_args = new ArrayList<String>();
     for (int i=0; i < args.length; ++i) {
@@ -180,11 +170,13 @@ public class ElasticBulkLoader extends Configured implements Tool {
       other_args.add(args[i]);
     }
 
-    FileInputFormat.setInputPaths(conf, new Path(other_args.get(0)));
-    FileOutputFormat.setOutputPath(conf, new Path(other_args.get(1)));
+    FileInputFormat.setInputPaths(job, new Path(other_args.get(0)));
 
+    // Used for logging?
+    FileOutputFormat.setOutputPath(job, new Path(other_args.get(1)));
+    
     try {
-      JobClient.runJob(conf);
+        job.waitForCompletion(true);
     }
     catch (IOException e) {
       throw new RuntimeException(e);

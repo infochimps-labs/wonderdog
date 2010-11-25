@@ -4,16 +4,9 @@ require 'rubygems'
 require 'wukong'
 require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
-#
-# dump_dir=tweet-foo ; cd ~/ics/backend/wonderdog/ ; hdp-rm -r /tmp/out/$dump_dir/ ; rake -f java/Rakefile -- --input_data=/tmp/tweet-split-20k/"tweet-20k-00" --output_data=/tmp/out/$dump_dir
-#
-
-CODE_DIR = File.expand_path(File.dirname(__FILE__))
-Settings.define :src,         :default => "src/ElasticBulkLoader.java",     :description => "Java source file to compile"
+Settings.define :src,         :default => "src",                            :description => "Java source dir"
 Settings.define :main_class,  :default => "ElasticBulkLoader",              :description => "Main java class to run"
 Settings.define :target,      :default => "build",                          :description => "Build target, this is where compiled classes live"
-Settings.define :input_data,  :default => "/tmp/in/tweet-1k.tsv",           :description => "Full hdfs path to input data"
-Settings.define :output_data, :default => "/tmp/foo",                       :description => "Full hdfs path to output data"
 Settings.define :hadoop_home, :default => "/usr/lib/hadoop",                :description => "Path to hadoop installation",       :env_var => "HADOOP_HOME"
 Settings.define :es_home,     :default => "/usr/local/share/elasticsearch", :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
 Settings.resolve!
@@ -35,28 +28,11 @@ def classpath options
   cp.join(':')
 end
 
-def hadoop_classpath options
-  cp = ["."]
-  Dir[
-    "/etc/elasticsearch/elasticsearch.yml",
-    "#{options.es_home}/plugins/*/*.jar",
-    "#{options.es_home}/lib/*.jar",
-    "#{options.es_home}/lib/sigar/*.jar"
-  ].each{|jar| cp << jar}
-  cp.join(':')
-end
-
-#
-# Returns those jars that need to be shipped to hadoop job
-#
-def libjars options
-  libjars = []
-  Dir[
-    "/etc/elasticsearch/elasticsearch.yml",
-    "#{options.es_home}/plugins/*/*.jar",
-    "#{options.es_home}/lib/*.jar"
-  ].each{|jar| libjars << jar}
-  libjars.join(',')
+def srcs options
+  sources = Dir[
+    "#{options.src}/*.java",
+  ].inject([]){|sources, src| sources << src; sources}
+  sources.join(' ')
 end
 
 #
@@ -64,33 +40,10 @@ end
 #
 task :compile do
   puts "Compiling #{options.src} ..."
-  snakized = options.main_class.underscore
-  mkdir_p File.join(CODE_DIR, options.target, snakized)
-  system "javac -cp #{classpath(options)} -d #{CODE_DIR}/#{options.target}/#{snakized} #{CODE_DIR}/#{options.src}"
-  system "jar -cvf  #{CODE_DIR}/#{options.target}/#{snakized}.jar -C #{CODE_DIR}/#{options.target}/#{snakized} . "
+  snakeized = options.main_class.underscore
+  mkdir_p File.join(options.target, snakeized)
+  system "javac -cp #{classpath(options)} -d #{options.target}/#{snakeized} #{srcs(options)}"
+  system "jar -cvf  #{options.target}/#{snakeized}.jar -C #{options.target}/#{snakeized} . "
 end
 
-
-def execute options
-  system %Q{ echo #{hdp_cmd(options)} }
-  system %Q{ #{hdp_cmd(options)} }
-end
-
-def hdp_cmd options
-  snakized = options.main_class.underscore
-  cmd = [
-    "HADOOP_CLASSPATH=#{hadoop_classpath(options)}",
-    "#{options.hadoop_home}/bin/hadoop jar",
-    "#{CODE_DIR}/#{options.target}/#{snakized}.jar",
-    options.main_class,
-    "-libjars #{libjars(options)}",
-    options.input_data,
-    options.output_data
-  ].join(" ")
-end
-
-task :run => [:compile] do
-  execute(options)
-end
-
-task :default => [:run]
+task :default => [:compile]
