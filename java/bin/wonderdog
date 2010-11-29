@@ -4,9 +4,10 @@ require 'rubygems'
 require 'wukong'
 require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
-Settings.define :index_name,       :default => "foo",                                  :description => "Index to write data to"
+Settings.define :index_name,       :required => true,                                  :description => "Index to write data to"
 Settings.define :object_type,      :default => "tweet",                                :description => "Type of object we're indexing"
-Settings.define :key_field,        :default => "1",                                    :description => "Field to use as object id"
+Settings.define :field_names,      :default => "rsrc,tweet_id,created_at,user_id,screen_name,search_id,in_reply_to_user_id,in_reply_to_screen_name,in_reply_to_search_id,in_reply_to_status_id,text,source,lang,lat,lng,retweeted_count,rt_of_user_id,rt_of_screen_name,rt_of_tweet_id,contributors", :description => "Comma separated list of field names"
+Settings.define :key_field,        :default => "1",                                    :description => "Index of field to use as object id (counting from 0; default 1)"
 Settings.define :bulk_size,        :default => "1000",                                 :description => "Number of records per bulk request"
 Settings.define :es_home,          :default => "/usr/local/share/elasticsearch",       :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
 Settings.define :es_config,        :default => "/etc/elasticsearch/elasticsearch.yml", :description => "Path to elasticsearch config"
@@ -15,7 +16,6 @@ Settings.define :hosts,            :default => "10.195.10.207,10.204.227.21",   
 Settings.define :initial_port,     :default => "9300",                                 :description => "Initial port to use for trasport client, will be incremented"
 Settings.define :rm,               :default => false,                                  :description => "Remove existing output?"
 Settings.define :hadoop_home,      :default => "/usr/lib/hadoop",                      :description => "Path to hadoop installation", :env_var => "HADOOP_HOME"
-Settings.define :field_names,      :default => "rsrc,tweet_id,created_at,user_id,screen_name,search_id,in_reply_to_user_id,in_reply_to_screen_name,in_reply_to_search_id,in_reply_to_status_id,text,source,lang,lat,lng,retweeted_count,rt_of_user_id,rt_of_screen_name,rt_of_tweet_id,contributors", :description => "Comma separated list of field names"
 Settings.resolve!
 
 raise "No input file specified." if Settings.rest.first.blank?

@@ -4,9 +4,10 @@ require 'rubygems'
 require 'wukong'
 require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
-Settings.define :src,         :default => "src",                            :description => "Java source dir"
+WORK_DIR=File.expand_path(File.dirname(__FILE__))
+Settings.define :src,         :default => "#{WORK_DIR}/src",                :description => "Java source dir"
+Settings.define :target,      :default => "#{WORK_DIR}/build",              :description => "Build target, this is where compiled classes live"
 Settings.define :main_class,  :default => "ElasticBulkLoader",              :description => "Main java class to run"
-Settings.define :target,      :default => "build",                          :description => "Build target, this is where compiled classes live"
 Settings.define :hadoop_home, :default => "/usr/lib/hadoop",                :description => "Path to hadoop installation",       :env_var => "HADOOP_HOME"
 Settings.define :es_home,     :default => "/usr/local/share/elasticsearch", :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
 Settings.resolve!

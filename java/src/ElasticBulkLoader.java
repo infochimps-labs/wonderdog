@@ -84,7 +84,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
           long startTime = System.currentTimeMillis();
           BulkResponse response = currentRequest.execute().actionGet();
           totalBulkTime.addAndGet(System.currentTimeMillis() - startTime);
-          if (randgen.nextDouble() < 0.005) {
+          if (randgen.nextDouble() < 0.05) {
             System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + (totalBulkTime.get()/1000) + "s] of indexing"+"[" + ((System.currentTimeMillis() - runStartTime)/1000) + "s] of wall clock"+" for ["+ (float)(1000.0*totalBulkItems.get())/(System.currentTimeMillis() - runStartTime) + "rec/s]");
           }
           if (response.hasFailures()) {

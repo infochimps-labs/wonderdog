@@ -9,8 +9,8 @@
 # 
 cloud:
   aws:
-    access_key:                 YOUR_KEY
-    secret_key:                 YOUR_SECRET
+    access_key:                 KEY
+    secret_key:                 SECRET
 
 cluster:
   name:                         hoolock
@@ -42,32 +42,47 @@ gateway:
   # fs gateway. In this case, if in an index should not persist its state, it
   # should be explicitly set to none.
   #
-  # Set gateway.type to one of: [none, local, fs, hadoop, cloud]
+  # Set gateway.type to one of: [none, local, fs, hadoop, s3]
   #
   type:                         local
+  # type:                         s3
+  # s3:
+  #   bucket:                     infochimps-search
+    
   # recovery begins when recover_after_nodes are present and then either
   # recovery_after_time has passed *or* expected_nodes have shown up.
   recover_after_nodes:          1
-  recovery_after_time:          2m          # 5m
-  expected_nodes:               12          # 2
+  recovery_after_time:          2m         # 5m
+  expected_nodes:               4          # 2
+  
 
 # http://groups.google.com/a/elasticsearch.com/group/users/browse_thread/thread/1f3001f43266879a/06d62ea3ceb4db30?lnk=gst&q=translog#06d62ea3ceb4db30
 indices:
   memory:
-    index_buffer_size:          768m
+    index_buffer_size:          1800m
+
+cache:
+  memory:
+    # buffer_size:              100k
+    # cache_size:                 50m
+    # direct:                   true
+    # warm_cache:               false
 
 # http://groups.google.com/a/elasticsearch.com/group/users/browse_thread/thread/439afb06f3e85aa7/431a8543811d7848?lnk=gst&q=configuration#431a8543811d7848    
 # cluster.routing.allocation.concurrent_recoveries
     
 index:
-  number_of_shards:             12
+  number_of_shards:             4
   number_of_replicas:           0
   #
   # deletionpolicy:             keep_only_last
   #
   translog:
-    # A shard is flushed to local disk once this number of operations accumulate in the translog. defaults to 5000
-    flush_threshold:            100000     # 5000
+    # A shard is flushed to local disk (the lucene index is committed) once this
+    # number of operations accumulate in the translog. defaults to 5000
+    #
+    # If you have 
+    flush_threshold:            200000     # 5000
   merge:
     policy:
       # Determines how often segment indices are merged by index operation. With
@@ -94,7 +109,7 @@ index:
       # single level. If you set this too large, it could greatly increase the
       # merging cost during indexing (if you flush many small
       # segments). Defaults to 1.6mb
-      min_merge_size:           1.6mb
+      min_merge_size:           2.7mb
       # Largest segment (by total byte size) that may be merged with other
       # segments. Defaults to unbounded.
       # max_merge_size:
@@ -103,6 +118,7 @@ index:
       # max_merge_docs
     scheduler:
       max_thread_count:         64
+
   engine:
     robin:
       # How often to schedule the refresh operation (the same one the Refresh
@@ -116,6 +132,7 @@ index:
       # terms. Small values cause more memory to be used by a reader / searcher,
       # and speed random-access to terms. Defaults to 128.
       term_index_interval:      1024
+
   gateway:
     # The index.gateway.snapshot_interval is a time setting allowing to
     # configure the interval at which snapshotting of the index shard to the
@@ -149,7 +166,7 @@ transport:
     port:                       9300-9400
     connect_timeout:            1s
     # # enable lzf compression in esnode-esnode communication?
-    # compress:                 false
+    compress:                   false
 
 # http://www.elasticsearch.com/docs/elasticsearch/modules/jmx/
 jmx:
@@ -179,7 +196,7 @@ discovery:
   # Be sure to set your cloud keys if you're using ec2
   ec2:
     # security groups used for discovery
-    groups:                     hoolock
+    groups:                     hoolock-data_esnode
     # require *all* (false) or *any* (true) of those groups?
     any_group:                  true
     # private_ip, public_ip, private_dns, public_dns
