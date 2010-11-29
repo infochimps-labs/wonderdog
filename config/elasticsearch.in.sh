@@ -33,6 +33,7 @@ JAVA_OPTS="$JAVA_OPTS -XX:SurvivorRatio=8"
 JAVA_OPTS="$JAVA_OPTS -XX:MaxTenuringThreshold=1"
 JAVA_OPTS="$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError"
 JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=$ES_WORK_DIR/heap"
+JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+TraceClassUnloading -XX:+PrintGCDetails -verbose:gc -Xloggc:/var/log/elasticsearch/elasticsearch-gc.log"
 
 JAVA_OPTS="$JAVA_OPTS -XX:+UseCompressedOops"  # avoid this on sun java < 1.6.0_20
 

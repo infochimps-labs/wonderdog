@@ -10,7 +10,7 @@
 cloud:
   aws:
     access_key:                 KEY
-    secret_key:                 SECRET
+    secret_key:                 SEEKRIT
 
 cluster:
   name:                         hoolock
@@ -45,21 +45,24 @@ gateway:
   # Set gateway.type to one of: [none, local, fs, hadoop, s3]
   #
   type:                         local
-  # type:                         s3
-  # s3:
-  #   bucket:                     infochimps-search
-    
+  #
   # recovery begins when recover_after_nodes are present and then either
   # recovery_after_time has passed *or* expected_nodes have shown up.
   recover_after_nodes:          1
   recovery_after_time:          2m         # 5m
-  expected_nodes:               4          # 2
-  
+  expected_nodes:               32          # 2
+  #
+  # # use with type: s3
+  # s3:
+  #   bucket:                     infochimps-search
 
 # http://groups.google.com/a/elasticsearch.com/group/users/browse_thread/thread/1f3001f43266879a/06d62ea3ceb4db30?lnk=gst&q=translog#06d62ea3ceb4db30
 indices:
   memory:
-    index_buffer_size:          1800m
+    # Increase if you are bulk loading
+    # A number ('512m') or percent ('10%'). You can set limits on a percentage
+    # with max_index_buffer_size and min_index_buffer_size. 10% by default.
+    index_buffer_size:          512m
 
 cache:
   memory:
@@ -67,12 +70,9 @@ cache:
     # cache_size:                 50m
     # direct:                   true
     # warm_cache:               false
-
-# http://groups.google.com/a/elasticsearch.com/group/users/browse_thread/thread/439afb06f3e85aa7/431a8543811d7848?lnk=gst&q=configuration#431a8543811d7848    
-# cluster.routing.allocation.concurrent_recoveries
     
 index:
-  number_of_shards:             4
+  number_of_shards:             32
   number_of_replicas:           0
   #
   # deletionpolicy:             keep_only_last
@@ -93,7 +93,7 @@ index:
       # (greater than 10) are best for batch index creation, and smaller values
       # (lower than 10) for indices that are interactively maintained. Defaults
       # to 10.
-      merge_factor:             20
+      merge_factor:             30
       # Use the compound file format. If not set, controlled by the actually
       # store used, this is because the compound format was created to reduce
       # the number of open file handles when using file based storage. The file
@@ -126,7 +126,7 @@ index:
       # disable automatic refresh (you must instead initiate refresh via API)
       refresh_interval:         -1
       # Temporal “index” stored in by Lucene in memory. 64mb default
-      ram_buffer_size:          128mb
+      indexing_buffer_size:     256mb
       # Set the interval between indexed terms. Large values cause less memory
       # to be used by a reader / searcher, but slow random-access to
       # terms. Small values cause more memory to be used by a reader / searcher,
@@ -194,11 +194,34 @@ discovery:
   # set to 'zen' or 'ec2'
   type:                         ec2
   # Be sure to set your cloud keys if you're using ec2
-  ec2:
-    # security groups used for discovery
-    groups:                     hoolock-data_esnode
-    # require *all* (false) or *any* (true) of those groups?
-    any_group:                  true
-    # private_ip, public_ip, private_dns, public_dns
-    host_type:                  private_ip
-    availability_zones:         us-east-1d
+  # ec2:
+  #   # security groups used for discovery
+  #   groups:                     hoolock-data_esnode
+  #   # require *all* (false) or *any* (true) of those groups?
+  #   any_group:                  true
+  #   # private_ip, public_ip, private_dns, public_dns
+  #   host_type:                  private_ip
+  #   availability_zones:         us-east-1d
+  zen:
+    ping:
+      multicast:
+        enabled:                false
+      unicast:
+        hosts:                  
+    # There are two fault detection processes running. The first is by the
+    # master, to ping all the other nodes in the cluster and verify that they
+    # are alive. And on the other end, each node pings to master to verify if
+    # its still alive or an election process needs to be initiated.
+    fd:
+      # How often a node gets pinged. Defaults to 1s.
+      ping_interval:            3s
+      # # How long to wait for a ping response, defaults to 30s.
+      # ping_timeout:           10s
+      # # How many ping failures / timeouts cause a node to be considered failed. Defaults to 3.
+      # ping_retries:           3
+
+# monitor.jvm: gc_threshold, interval, enabled
+# gateway.fs:   chunk_size
+
+# http://groups.google.com/a/elasticsearch.com/group/users/browse_thread/thread/439afb06f3e85aa7/431a8543811d7848?lnk=gst&q=configuration#431a8543811d7848    
+# cluster.routing.allocation.concurrent_recoveries

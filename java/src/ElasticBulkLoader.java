@@ -74,7 +74,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
         builder.endObject();
         currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[keyField]).create(true).source(builder));
         processBulkIfNeeded();
-        if (randgen.nextDouble() < 0.001) { context.write(new Text(fields[keyField]), new Text("Indexed") ); }
+        if (randgen.nextDouble() < 0.01) { context.write(new Text(fields[keyField]), new Text("Indexed") ); }
     }
 
     private void processBulkIfNeeded() {
@@ -84,7 +84,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
           long startTime = System.currentTimeMillis();
           BulkResponse response = currentRequest.execute().actionGet();
           totalBulkTime.addAndGet(System.currentTimeMillis() - startTime);
-          if (randgen.nextDouble() < 0.05) {
+          if (randgen.nextDouble() < 0.1) {
             System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + (totalBulkTime.get()/1000) + "s] of indexing"+"[" + ((System.currentTimeMillis() - runStartTime)/1000) + "s] of wall clock"+" for ["+ (float)(1000.0*totalBulkItems.get())/(System.currentTimeMillis() - runStartTime) + "rec/s]");
           }
           if (response.hasFailures()) {
