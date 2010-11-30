@@ -13,10 +13,13 @@ logger:
     gateway:    DEBUG
     engine:     DEBUG
     merge:      DEBUG
+    translog:   DEBUG
   gateway:      DEBUG
   discovery:    DEBUG
   jmx:          DEBUG
-  
+  httpclient:   INFO
+  node:         DEBUG
+  plugins:      DEBUG
 
 appender:
   console:

@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 
+# bump the # of open files way way up
 ulimit -n 65536
-ES_MAX_MEM=${ES_MAX_MEM-3200m}
+# allow elasticsearch to lock itself into memory if JNA is installed
+ulimit -l unlimited
+
+ES_MAX_MEM=${ES_MAX_MEM-2800m}
 node=${node-2}
 
-sudo -u elasticsearch                               \
-  ES_MIN_MEM=$ES_MAX_MEM                                  \
-  ES_MAX_MEM=$ES_MAX_MEM                             \
-  ES_INCLUDE=/etc/elasticsearch/elasticsearch.in.sh \
-  ES_CONF_DIR=/etc/elasticsearch                    \
-  ES_DATA_DIR=/mnt$node/elasticsearch/data              \
-  ES_WORK_DIR=/mnt$node/elasticsearch/work              \
-  /usr/local/share/elasticsearch/bin/elasticsearch -p /var/run/elasticsearch/es-$node.pid -Des.config=/etc/elasticsearch/elasticsearch.yml
+echo "node=$node"
+
+export ES_MIN_MEM=$ES_MAX_MEM
+export ES_MAX_MEM=$ES_MAX_MEM
+export ES_INCLUDE=/etc/elasticsearch/elasticsearch.in.sh
+export ES_CONF_DIR=/etc/elasticsearch
+export ES_DATA_DIR=/mnt$node/elasticsearch/data
+export ES_WORK_DIR=/mnt$node/elasticsearch/work
+
+exec chpst -u elasticsearch /usr/local/share/elasticsearch/bin/elasticsearch -p /var/run/elasticsearch/es-$node.pid -Des.config=/etc/elasticsearch/elasticsearch.yml

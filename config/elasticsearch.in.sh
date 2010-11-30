@@ -5,6 +5,11 @@ export ES_DATA_DIR=${ES_DATA_DIR-/mnt/elasticsearch/data}
 export CLASSPATH=$ES_HOME/plugins/cloud-aws.zip
 CLASSPATH=$CLASSPATH:$ES_HOME/lib/elasticsearch-0.11.0.jar:$ES_HOME/lib/*:$ES_HOME/lib/sigar/*
 
+# bump the # of open files way way up
+ulimit -n 65536
+# allow elasticsearch to lock itself into memory if JNA is installed
+ulimit -l unlimited
+
 if [ "x$ES_MIN_MEM" = "x" ]; then
   ES_MIN_MEM=256m
 fi
@@ -27,9 +32,10 @@ JAVA_OPTS="$JAVA_OPTS -XX:+CMSParallelRemarkEnabled"
 JAVA_OPTS="$JAVA_OPTS -XX:SurvivorRatio=8"
 JAVA_OPTS="$JAVA_OPTS -XX:MaxTenuringThreshold=1"
 JAVA_OPTS="$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError"
-JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=$ES_HOME/work/heap"
+JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=$ES_WORK_DIR/heap"
+JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+TraceClassUnloading -XX:+PrintGCDetails -verbose:gc -Xloggc:/var/log/elasticsearch/elasticsearch-gc.log"
 
-JAVA_OPTS="$JAVA_OPTS -XX:+UseCompressedOops"
+JAVA_OPTS="$JAVA_OPTS -XX:+UseCompressedOops"  # avoid this on sun java < 1.6.0_20
 
 # ensures JMX accessible from outside world
 JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Djava.rmi.server.hostname=ec2-184-73-69-18.compute-1.amazonaws.com "
@@ -39,5 +45,8 @@ JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.managem
 #  -XX:CMSInitiatingOccupancyFraction=88 
 
 ES_JAVA_OPTS="$ES_JAVA_OPTS -Des.path.data=$ES_DATA_DIR -Des.path.work=$ES_WORK_DIR"
+
+echo JAVA_OPTS="'$JAVA_OPTS'"
+echo ES_JAVA_OPTS="'$ES_JAVA_OPTS'"
 
 export JAVA_OPTS ES_JAVA_OPTS ES_MAX_MEM ES_MIN_MEM
