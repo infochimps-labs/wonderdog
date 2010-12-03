@@ -1,3 +1,10 @@
+To do a full flush, do this:
+
+  curl -XPOST host:9200/_flush?full=true
+
+(run it every 30 min during import)
+
+
 1 c1.xl 	4es/12sh     	768m buffer     1400m heap
  2,584,346,624	     255,304	0h14m25	    865	    295	   2917
 
@@ -134,7 +141,11 @@
 43,201,339,007	 166,049,864	0h35m06	   2106	   9855	   2504	      8	  78846	  20032
 
 
- 
+2009{10,11,12}
+
+8 c1.xl		24es/24sh 	14hdp/140  512m buffer	1200m heap	200_000 tlog	4096 batch	no compr	256m engine.ram_buffer_size -- 3s ping_interval -- merge_factor 30 
+135,555,262,283	 516,220,825	2h16m13	   8173	   7895	   2024	      8	  63161	  16197
+
 
 slug=tweet-2009q3pre ; curl -XGET 'http://10.99.10.113:9200/_flush/' ; curl -XPUT "http://10.99.10.113:9200/$slug/" ; rake -f ~/ics/backend/wonderdog/java/Rakefile ; ~/ics/backend/wonderdog/java/bin/wonderdog --rm --index_name=$slug --bulk_size=4096 --object_type=tweet /tmp/tweet_by_month-tumbled/"tweet-200[678]" /tmp/es_bulkload_log/$slug
 

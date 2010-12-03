@@ -12,11 +12,13 @@ Settings.define :bulk_size,        :default => "1000",                          
 Settings.define :es_home,          :default => "/usr/local/share/elasticsearch",       :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
 Settings.define :es_config,        :default => "/etc/elasticsearch/elasticsearch.yml", :description => "Path to elasticsearch config"
 Settings.define :transport_client, :default => false,                                  :description => "Should we use transport clients?"
-Settings.define :hosts,            :default => "10.195.10.207,10.204.227.21",          :description => "Comma separated list of hosts to pass in for tranport clients"
+Settings.define :hosts,            :default => "10.195.215.175,10.243.57.219,10.194.218.143,10.204.223.175,10.242.89.235,10.212.226.127,10.194.218.207,10.243.59.239",          :description => "Comma separated list of hosts to pass in for tranport clients"
 Settings.define :initial_port,     :default => "9300",                                 :description => "Initial port to use for trasport client, will be incremented"
 Settings.define :rm,               :default => false,                                  :description => "Remove existing output?"
 Settings.define :hadoop_home,      :default => "/usr/lib/hadoop",                      :description => "Path to hadoop installation", :env_var => "HADOOP_HOME"
 Settings.resolve!
+
+
 
 raise "No input file specified." if Settings.rest.first.blank?
 
@@ -84,8 +86,7 @@ class Wonderdog
   end
 
   def transport_client
-    return "-Delasticsearch.transport_client=0" unless options.transport_client
-    return "-Delasticsearch.transport_client=1"
+    "-Delasticsearch.transport_client=#{options.transport_client.blank? ? 0 : 1}"
   end
 
   def remove_output output

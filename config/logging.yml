@@ -10,10 +10,15 @@ logger:
   index:
     shard:
       recovery: DEBUG
+    store:      INFO
     gateway:    DEBUG
     engine:     DEBUG
     merge:      DEBUG
     translog:   DEBUG
+  cluster:
+    service:    DEBUG
+    action:
+      shard:    DEBUG
   gateway:      DEBUG
   discovery:    DEBUG
   jmx:          DEBUG

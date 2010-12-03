@@ -2,20 +2,15 @@
 # ElasticSearch config file
 #
 
-# Necessary if you will use either of
-# * the ec2 discovery module: for finding peers
-# * the s3 gateway module, for pushing indices to an s3 mirror.
-# Read more: http://www.elasticsearch.com/docs/elasticsearch/cloud/
-# 
-cloud:
-  aws:
-    access_key:                 KEY
-    secret_key:                 SEEKRIT
-
 cluster:
   name:                         hoolock
 
-# File paths. Best to spread the write load out.
+  # http://groups.google.com/a/elasticsearch.com/group/users/browse_thread/thread/439afb06f3e85aa7/431a8543811d7848?lnk=gst&q=configuration#431a8543811d7848    
+  routing:
+    allocation:
+      concurrent_recoveries:    1
+
+# File paths
 path:
   home:                         /usr/local/share/elasticsearch
   conf:                         /etc/elasticsearch
@@ -48,9 +43,9 @@ gateway:
   #
   # recovery begins when recover_after_nodes are present and then either
   # recovery_after_time has passed *or* expected_nodes have shown up.
-  recover_after_nodes:          1
-  recovery_after_time:          2m         # 5m
-  expected_nodes:               32          # 2
+  recover_after_nodes:          24
+  recovery_after_time:          10m         # 5m
+  expected_nodes:               24          # 2
   #
   # # use with type: s3
   # s3:
@@ -67,16 +62,13 @@ indices:
 cache:
   memory:
     # buffer_size:              100k
-    # cache_size:                 50m
+    # cache_size:               50m
     # direct:                   true
     # warm_cache:               false
     
 index:
-  number_of_shards:             32
+  number_of_shards:             24
   number_of_replicas:           0
-  #
-  # deletionpolicy:             keep_only_last
-  #
   translog:
     # A shard is flushed to local disk (the lucene index is committed) once this
     # number of operations accumulate in the translog. defaults to 5000
@@ -118,6 +110,7 @@ index:
       # max_merge_docs
     scheduler:
       max_thread_count:         64
+  # deletionpolicy:             keep_only_last
 
   engine:
     robin:
@@ -125,8 +118,6 @@ index:
       # API, which enables near real time search).  Default '1s'; set to -1 to
       # disable automatic refresh (you must instead initiate refresh via API)
       refresh_interval:         -1
-      # Temporal “index” stored in by Lucene in memory. 64mb default
-      indexing_buffer_size:     256mb
       # Set the interval between indexed terms. Large values cause less memory
       # to be used by a reader / searcher, but slow random-access to
       # terms. Small values cause more memory to be used by a reader / searcher,
@@ -156,9 +147,6 @@ network:
   #   reuse_address             true
   #   send_buffer_size          ~
   #   receive_buffer_size:      ~
-
-thrift:
-  # port:                         
 
 # http://www.elasticsearch.com/docs/elasticsearch/modules/transport/
 transport:
@@ -192,8 +180,29 @@ threadpool:
 # http://www.elasticsearch.com/docs/elasticsearch/modules/discovery/
 discovery:
   # set to 'zen' or 'ec2'
-  type:                         ec2
-  # Be sure to set your cloud keys if you're using ec2
+  type:                         zen
+  zen:
+    ping:
+      multicast:
+        enabled:                false
+      unicast:
+        hosts:                  10.195.215.175:9300,10.243.57.219:9300,10.194.218.143:9300,10.204.223.175:9300,10.242.89.235:9300,10.212.226.127:9300
+    # There are two fault detection processes running. The first is by the
+    # master, to ping all the other nodes in the cluster and verify that they
+    # are alive. And on the other end, each node pings to master to verify if
+    # its still alive or an election process needs to be initiated.
+    fd:
+      # How often a node gets pinged. Defaults to "1s".
+      ping_interval:            3s
+      # How long to wait for a ping response, defaults to "30s".
+      ping_timeout:             10s
+      # How many ping failures / timeouts cause a node to be considered failed. Defaults to 3.
+      ping_retries:             3
+  #
+  # # ec2 discovery can cause big trouble with the hadoop loader:
+  # # discovery churn can hit API usage limits
+  # # Be sure to set your cloud keys if you're using ec2
+  # #
   # ec2:
   #   # security groups used for discovery
   #   groups:                     hoolock-data_esnode
@@ -202,26 +211,17 @@ discovery:
   #   # private_ip, public_ip, private_dns, public_dns
   #   host_type:                  private_ip
   #   availability_zones:         us-east-1d
-  zen:
-    ping:
-      multicast:
-        enabled:                false
-      unicast:
-        hosts:                  
-    # There are two fault detection processes running. The first is by the
-    # master, to ping all the other nodes in the cluster and verify that they
-    # are alive. And on the other end, each node pings to master to verify if
-    # its still alive or an election process needs to be initiated.
-    fd:
-      # How often a node gets pinged. Defaults to 1s.
-      ping_interval:            3s
-      # # How long to wait for a ping response, defaults to 30s.
-      # ping_timeout:           10s
-      # # How many ping failures / timeouts cause a node to be considered failed. Defaults to 3.
-      # ping_retries:           3
+
+# Necessary if you will use either of
+# * the ec2 discovery module: for finding peers
+# * the s3 gateway module, for pushing indices to an s3 mirror.
+# Read more: http://www.elasticsearch.com/docs/elasticsearch/cloud/
+# 
+cloud:
+  aws:
+    access_key:                 <%= @aws['aws_access_key_id'] %>
+    secret_key:                 <%= @aws['aws_secret_access_key'] %>
 
 # monitor.jvm: gc_threshold, interval, enabled
-# gateway.fs:   chunk_size
-
-# http://groups.google.com/a/elasticsearch.com/group/users/browse_thread/thread/439afb06f3e85aa7/431a8543811d7848?lnk=gst&q=configuration#431a8543811d7848    
-# cluster.routing.allocation.concurrent_recoveries
+# thrift:
+#   # port:                         
