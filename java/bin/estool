@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'json'
+require 'rake'
+require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
+
+Settings.define :host,  :required => true, :description => "Elastic search cluster host ip address"
+Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
+Settings.define :data_index,               :description => "Which index to address?"
+Settings.resolve!
+
+task :status do
+  sh "curl -s -XGET \"http://%s:%s/_status?pretty=true\"" % [Settings.host, Settings.port]
+end
+
+task :health do
+  sh "curl -s -XGET \"http://%s:%s/_cluster/health?pretty=true\"" % [Settings.host, Settings.port]  
+end
+
+task :flush_index do
+  sh "curl -s -XGET \"http://%s:%s/%s/_flush?full=true\"" % [Settings.host, Settings.port, Settings.data_index]  
+end
+
+task :flush_all do
+  sh "curl -s -XGET \"http://%s:%s/_flush?full=true\"" % [Settings.host, Settings.port]  
+end
+
+task :create_index do
+  sh "curl -s -XPUT \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.data_index]  
+end
+
+Rake::Task[Settings.rest.first].invoke
