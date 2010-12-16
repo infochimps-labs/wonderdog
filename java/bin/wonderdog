@@ -40,6 +40,7 @@ class Wonderdog
       "HADOOP_CLASSPATH=#{hadoop_classpath}",
       "#{options.hadoop_home}/bin/hadoop jar #{run_jar}",
       mainclass,
+      "-Dmapred.map.tasks.speculative.execution=false",
       "-Delasticsearch.initial_port=#{options.initial_port}",
       "-Delasticsearch.hosts=#{options.hosts}",
       "-Delasticsearch.index_name=#{options.index_name}",

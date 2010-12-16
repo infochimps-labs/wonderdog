@@ -8,6 +8,7 @@ require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 Settings.define :host,  :required => true, :description => "Elastic search cluster host ip address"
 Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
 Settings.define :data_index,               :description => "Which index to address?"
+Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
 Settings.resolve!
 
 task :status do
@@ -19,15 +20,20 @@ task :health do
 end
 
 task :flush_index do
-  sh "curl -s -XGET \"http://%s:%s/%s/_flush?full=true\"" % [Settings.host, Settings.port, Settings.data_index]  
+  sh "curl -s -XPOST \"http://%s:%s/%s/_flush?full=true\"" % [Settings.host, Settings.port, Settings.data_index]  
 end
 
 task :flush_all do
-  sh "curl -s -XGET \"http://%s:%s/_flush?full=true\"" % [Settings.host, Settings.port]  
+  sh "curl -s -XPOST \"http://%s:%s/_flush?full=true\"" % [Settings.host, Settings.port]  
 end
 
 task :create_index do
   sh "curl -s -XPUT \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.data_index]  
 end
+
+task :set_replicas do
+  sh "curl -s -XPUT \"http://%s:%s/%s/_settings\" -d {\"index\":{\"number_of_replicas\":%s}}" % [Settings.host, Settings.port, Settings.data_index, Settings.replicas]  
+end
+
 
 Rake::Task[Settings.rest.first].invoke
