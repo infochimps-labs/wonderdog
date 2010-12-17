@@ -7,7 +7,7 @@ require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
 Settings.define :host,  :required => true, :description => "Elastic search cluster host ip address"
 Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
-Settings.define :data_index,               :description => "Which index to address?"
+Settings.define :index_name,               :description => "Which index to address?"
 Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
 Settings.resolve!
 
@@ -29,7 +29,7 @@ end
 # Executes a full flush of the specified index, can take a while for large indices
 #
 task :flush_index do
-  sh "curl -s -XPOST \"http://%s:%s/%s/_flush?full=true\"" % [Settings.host, Settings.port, Settings.data_index]
+  sh "curl -s -XPOST \"http://%s:%s/%s/_flush?full=true\"" % [Settings.host, Settings.port, Settings.index_name]
 end
 
 #
@@ -44,7 +44,7 @@ end
 # Creates the specified index
 #
 task :create_index do
-  sh "curl -s -XPUT \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.data_index]
+  sh "curl -s -XPUT \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.index_name]
 end
 
 #
@@ -52,14 +52,14 @@ end
 # for bulk loading then bump up to 1 later.
 #
 task :set_replicas do
-  sh "curl -s -XPUT \"http://%s:%s/%s/_settings\" -d {\"index\":{\"number_of_replicas\":%s}}" % [Settings.host, Settings.port, Settings.data_index, Settings.replicas]
+  sh "curl -s -XPUT \"http://%s:%s/%s/_settings\" -d {\"index\":{\"number_of_replicas\":%s}}" % [Settings.host, Settings.port, Settings.index_name, Settings.replicas]
 end
 
 #
 # Does a full compaction, merging smaller index files, for the given index.
 #
 task :optimize_index do
-  sh "curl -s -XPOST \"http://%s:%s/%s/_optimize\"" % [Settings.host, Settings.port, Settings.data_index]
+  sh "curl -s -XPOST \"http://%s:%s/%s/_optimize\"" % [Settings.host, Settings.port, Settings.index_name]
 end
 
 
