@@ -16,6 +16,7 @@ Settings.define :hosts,            :default => "10.195.215.175,10.243.57.219,10.
 Settings.define :initial_port,     :default => "9300",                                 :description => "Initial port to use for trasport client, will be incremented"
 Settings.define :rm,               :default => false,                                  :description => "Remove existing output?"
 Settings.define :hadoop_home,      :default => "/usr/lib/hadoop",                      :description => "Path to hadoop installation", :env_var => "HADOOP_HOME"
+Settings.define :min_split_size,   :default => "5000000000",                           :description => "Min split size for maps"
 Settings.resolve!
 
 
@@ -41,6 +42,7 @@ class Wonderdog
       "#{options.hadoop_home}/bin/hadoop jar #{run_jar}",
       mainclass,
       "-Dmapred.map.tasks.speculative.execution=false",
+      "-Dmapred.min.split.size=#{options.min_split_size}",
       "-Delasticsearch.initial_port=#{options.initial_port}",
       "-Delasticsearch.hosts=#{options.hosts}",
       "-Delasticsearch.index_name=#{options.index_name}",

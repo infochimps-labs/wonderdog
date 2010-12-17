@@ -37,3 +37,23 @@ end
 
 
 Rake::Task[Settings.rest.first].invoke
+
+
+#
+# Alternatively, one could use the rubberband gem
+#
+# $: sudo apt-get install libcurl4-dev
+# $: sudo gem install rubberband
+#
+#
+# require 'rubberband'
+#
+# client = ElasticSearch.new('10.195.215.175:9200', :index => "tweet-2010q1", :type => "tweet")
+# client.search "text:infochimps"
+
+# info_hash     = client.index_status
+# num_docs      = info_hash['indices']['tweet-2010q1']['docs']['num_docs']
+# num_shards    = info_hash['indices']['tweet-2010q1']['settings']['index.number_of_shards']
+# num_replicas  = info_hash['indices']['tweet-2010q1']['settings']['index.number_of_replicas']
+# size_in_bytes = info_hash['indices']['tweet-2010q1']['store_size_in_bytes']
+#
