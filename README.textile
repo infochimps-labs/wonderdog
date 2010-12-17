@@ -6,14 +6,7 @@ h2. Requirements
 
 h3. Hadoop cluster setup:
 
-Wonderdog makes use of hadoop to do its bulk loading so you'll need to have a fully functional
-hadoop cluster lying around. Additionally, each machine in the hadoop cluster will need to have
-"elasticsearch":http://www.elasticsearch.com/download/ installed in the same location on each machine.
-
-Defaults for most everything will want elasticsearch itself to live in @/usr/local/share/elasticsearch@
-and the configuration @elasticsearch/config/*@ to actually live in @/etc/elasticsearch@. For simplicity
-you might set @ES_HOME@ and @ES_CONF@ to point to the right places. As an example setup process (with
-elasticsearch 0.13):
+Wonderdog makes use of hadoop to do its bulk loading so you'll need to have a fully functional hadoop cluster lying around. Additionally, each machine in the hadoop cluster will need to have "elasticsearch":http://www.elasticsearch.com/download/ installed in the same location on each machine. Defaults for most everything will want elasticsearch itself to live in @/usr/local/share/elasticsearch@ and the configuration @elasticsearch/config/*@ to actually live in @/etc/elasticsearch@. For simplicity you might set @ES_HOME@ and @ES_CONF@ to point to the right places. As an example setup process (with elasticsearch 0.13):
 
 <pre><code>
 wget http://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.13.0.zip
@@ -23,14 +16,11 @@ sudo ln -s /usr/local/share/elasticsearch-0.13.0 /usr/local/share/elasticsearch
 sudo cp /usr/local/share/elasticsearch/config/* /etc/elasticsearch/
 </code></pre>
 
-Then, make all your changes to the configuration files in @/etc/elasticsearch@. See @config/*@ for a set of
-example configuration files.
+Then, make all your changes to the configuration files in @/etc/elasticsearch@. See @config/*@ for a set of example configuration files.
 
 h3. ElasticSearch cluster setup:
 
-Follow the same procedure as that for the hadoop cluster setup. Once elasticsearch is installed on all the
-machines you'll want to start the daemons. It's generally a good idea to have created an elasticsearch user
-and run the daemons as this user. Then:
+Follow the same procedure as that for the hadoop cluster setup. Once elasticsearch is installed on all the machines you'll want to start the daemons. It's generally a good idea to have created an elasticsearch user and run the daemons as this user. Then:
 
 <pre><code>
 # Where does elasticsearch live?
@@ -39,7 +29,7 @@ export ES_CONF_DIR=/etc/elasticsearch
 export ES_INCLUDE=$ES_CONF_DIR/elasticsearch.in.sh
 
 # Where does data live?
-ES_DATA_ROOT=/mnt$node/elasticsearch
+ES_DATA_ROOT=/mnt/elasticsearch
 export ES_DATA_DIR=$ES_DATA_ROOT/data
 export ES_WORK_DIR=$ES_DATA_ROOT/work
 
@@ -56,9 +46,7 @@ export ES_MIN_MEM=$ES_MAX_MEM
 sudo -u elasticsearch $ES_HOME/bin/elasticsearch -Des.config=/etc/elasticsearch/elasticsearch.yml&
 </code></pre>
 
-should get you started. Do this for every machine in you elasticsearch cluster.
-
-Finally, both
+should get you started. Do this for every machine in you elasticsearch cluster. Finally, both
 
 @java/bin/estool --host=<elasticsearch_host> status@ and
 @java/bin/estool --host=<elasticsearch_host> health@
@@ -69,18 +57,14 @@ In addition to the setup for each cluster you'll need to ensure they can talk to
 
 h2. Usage
 
-Once you've got a working set up you should be ready to launch your bulkload process. Right now the bulkload
-only accepts tsv though json and avro support should be possible with straightforward changes (contributions?).
+Once you've got a working set up you should be ready to launch your bulkload process. Right now the bulkload only accepts tsv though json and avro support should be possible with straightforward changes (contributions?).
 
-The best way to explain is with an example. Say you've got a tsv file of user records (name,login,email,description)
-and you want to index all the fields. I'm assuming you're going to write to an index called users with objects of
-type user (elasticsearch will create this object automatically the first time you upload one). The workflow is as
-follows:
+The best way to explain is with an example. Say you've got a tsv file of user records (name,login,email,description) and you want to index all the fields. I'm assuming you're going to write to an index called @users@ with objects of type @user@ (elasticsearch will create this object automatically the first time you upload one). The workflow is as follows:
 
 * Create the @users@ index:
 
 <pre><code>
-bin/estool --host=<elasticsearch_host> --data_index=users create_index
+bin/estool --host=<elasticsearch_host> --index_name=users create_index
 </code></pre>
 
 * Upload the data
@@ -96,7 +80,7 @@ While the bulkload is running you'll want to periodically flush the index (this 
 elasticsearch is using at the moment):
 
 <pre><code>
-bin/estool --host=<elasticsearch_host> --data_index=users flush_index
+bin/estool --host=<elasticsearch_host> --index_name=users flush_index
 </code></pre>
 
 Flush one last time at the end of the bulkload.
@@ -104,7 +88,7 @@ Flush one last time at the end of the bulkload.
 * Bump the replicas for the index up to at least one.
 
 <pre><code>
-bin/estool --host=<elasticsearch_host> --data_index=users --replicas=1 set_replicas
+bin/estool --host=<elasticsearch_host> --index_name=users --replicas=1 set_replicas
 </code></pre>
 
 This will take a while to finish and the cluster health will show yellow until it does.
@@ -112,7 +96,7 @@ This will take a while to finish and the cluster health will show yellow until i
 * Optimize the index
 
 <pre><code>
-bin/estool --host=<elasticsearch_host> --data_index=users optimize_index
+bin/estool --host=<elasticsearch_host> --index_name=users optimize_index
 </code></pre>
 
 This will also take a while to finish.
