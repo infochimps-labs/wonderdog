@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'json'
+require 'rake'
+require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
+
+Settings.define :host,  :required => true, :description => "Elastic search cluster host ip address"
+Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
+Settings.define :index_name,               :description => "Which index to address?"
+Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
+Settings.resolve!
+
+#
+# Prints status of all indices as a json hash to the terminal
+#
+task :status do
+  sh "curl -s -XGET \"http://%s:%s/_status?pretty=true\"" % [Settings.host, Settings.port]
+end
+
+#
+# Prints general cluster health as json hash to the terminal
+#
+task :health do
+  sh "curl -s -XGET \"http://%s:%s/_cluster/health?pretty=true\"" % [Settings.host, Settings.port]
+end
+
+#
+# Executes a full flush of the specified index, can take a while for large indices
+#
+task :flush_index do
+  sh "curl -s -XPOST \"http://%s:%s/%s/_flush?full=true\"" % [Settings.host, Settings.port, Settings.index_name]
+end
+
+#
+# Executes a full flush of all indices, this will negatively impact read performance while
+# it's taking place.
+#
+task :flush_all do
+  sh "curl -s -XPOST \"http://%s:%s/_flush?full=true\"" % [Settings.host, Settings.port]
+end
+
+#
+# Creates the specified index
+#
+task :create_index do
+  sh "curl -s -XPUT \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.index_name]
+end
+
+#
+# Sets the number of replicas for the given index. Typically want it set to 0
+# for bulk loading then bump up to 1 later.
+#
+task :set_replicas do
+  sh "curl -s -XPUT \"http://%s:%s/%s/_settings\" -d {\"index\":{\"number_of_replicas\":%s}}" % [Settings.host, Settings.port, Settings.index_name, Settings.replicas]
+end
+
+#
+# Does a full compaction, merging smaller index files, for the given index.
+#
+task :optimize_index do
+  sh "curl -s -XPOST \"http://%s:%s/%s/_optimize\"" % [Settings.host, Settings.port, Settings.index_name]
+end
+
+
+Rake::Task[Settings.rest.first].invoke
+
+
+#
+# Alternatively, one could use the rubberband gem
+#
+# $: sudo apt-get install libcurl4-dev
+# $: sudo gem install rubberband
+#
+#
+# require 'rubberband'
+#
+# client = ElasticSearch.new('10.195.215.175:9200', :index => "tweet-2010q1", :type => "tweet")
+# client.search "text:infochimps"
+
+# info_hash     = client.index_status
+# num_docs      = info_hash['indices']['tweet-2010q1']['docs']['num_docs']
+# num_shards    = info_hash['indices']['tweet-2010q1']['settings']['index.number_of_shards']
+# num_replicas  = info_hash['indices']['tweet-2010q1']['settings']['index.number_of_replicas']
+# size_in_bytes = info_hash['indices']['tweet-2010q1']['store_size_in_bytes']
+#
