@@ -72,7 +72,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
             }
         }
         builder.endObject();
-        currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[keyField]).create(true).source(builder));
+        currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[keyField]).create(false).source(builder));
         processBulkIfNeeded();
         if (randgen.nextDouble() < 0.01) { context.write(new Text(fields[keyField]), new Text("Indexed") ); }
     }
@@ -123,6 +123,9 @@ public class ElasticBulkLoader extends Configured implements Tool {
 
     public void close() {
       client.close();
+      if (node != null) {
+          node.close();
+      }
       System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + totalBulkTime.get() + "ms]");
     }
 

@@ -59,9 +59,15 @@ end
 # Does a full compaction, merging smaller index files, for the given index.
 #
 task :optimize_index do
-  sh "curl -s -XPOST \"http://%s:%s/%s/_optimize\"" % [Settings.host, Settings.port, Settings.index_name]
+  sh "curl -s -XPOST \"http://%s:%s/%s/_optimize?max_num_segments=1\"" % [Settings.host, Settings.port, Settings.index_name]
 end
 
+#
+# Snapshot index to gateway
+#
+task :snapshot_index do
+  sh "curl -s -XPOST \"http://%s:%s/%s/_gateway/snapshot\"" % [Settings.host, Settings.port, Settings.index_name]
+end
 
 Rake::Task[Settings.rest.first].invoke
 
@@ -78,9 +84,14 @@ Rake::Task[Settings.rest.first].invoke
 # client = ElasticSearch.new('10.195.215.175:9200', :index => "tweet-2010q1", :type => "tweet")
 # client.search "text:infochimps"
 
-# info_hash     = client.index_status
-# num_docs      = info_hash['indices']['tweet-2010q1']['docs']['num_docs']
-# num_shards    = info_hash['indices']['tweet-2010q1']['settings']['index.number_of_shards']
-# num_replicas  = info_hash['indices']['tweet-2010q1']['settings']['index.number_of_replicas']
-# size_in_bytes = info_hash['indices']['tweet-2010q1']['store_size_in_bytes']
+# index_status  = client.index_status
+# num_docs      = index_status['indices']['tweet-2010q1']['docs']['num_docs']
+# num_shards    = index_status['indices']['tweet-2010q1']['settings']['index.number_of_shards']
+# num_replicas  = index_status['indices']['tweet-2010q1']['settings']['index.number_of_replicas']
+# size_in_bytes = index_status['indices']['tweet-2010q1']['store_size_in_bytes']
 #
+# state           = client.index_state
+# es_node_mapping = state['nodes'].inject({}){|hsh,node| hsh[node.last['name']] = node.last['transport_address']; hsh}
+#
+# def index_ok?; client.index_status['ok']; done
+# def cluster_color; client.cluster_health["status"]; done
