@@ -69,6 +69,13 @@ task :snapshot_index do
   sh "curl -s -XPOST \"http://%s:%s/%s/_gateway/snapshot\"" % [Settings.host, Settings.port, Settings.index_name]
 end
 
+#
+# Delete an index, USE WITH CAUTION!
+#
+task :delete_index do
+  sh "curl -s -XDELETE \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.index_name]
+end
+
 Rake::Task[Settings.rest.first].invoke
 
 
