@@ -17,12 +17,14 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
@@ -46,7 +48,13 @@ import org.elasticsearch.client.transport.TransportClient;
 
 public class ElasticBulkLoader extends Configured implements Tool {
 
-  public static class IndexMapper extends Mapper<LongWritable, Text, Text, Text> {
+  enum BulkRequests {
+      SUCCEEDED,
+      FAILED,
+      INDEXED
+  }
+    
+  public static class IndexMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
       
     private Node node;
     private Client client;
@@ -63,8 +71,19 @@ public class ElasticBulkLoader extends Configured implements Tool {
     private Random     randgen        = new Random();
     private long       runStartTime   = System.currentTimeMillis();
 
+    // Used for hadoop counters
+    private Counter succeededRequests;
+    private Counter failedRequests;
+    private Counter indexedRecords;
+
+    // Used to hold records and dump in case of failure
+    private ArrayList<String> records;
+
     public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         String[] fields = value.toString().split("\t");
+        // Add to arraylist
+        records.add(value.toString());
+        //
         XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
         for(int i = 0; i < fields.length; i++) {
             if (i < fieldNames.length) {
@@ -73,11 +92,10 @@ public class ElasticBulkLoader extends Configured implements Tool {
         }
         builder.endObject();
         currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[keyField]).create(false).source(builder));
-        processBulkIfNeeded();
-        if (randgen.nextDouble() < 0.01) { context.write(new Text(fields[keyField]), new Text("Indexed") ); }
+        processBulkIfNeeded(context);
     }
 
-    private void processBulkIfNeeded() {
+    private void processBulkIfNeeded(Context context) {
       totalBulkItems.incrementAndGet();
       if (currentRequest.numberOfActions() >= bulkSize) {
         try {
@@ -88,12 +106,22 @@ public class ElasticBulkLoader extends Configured implements Tool {
             System.out.println("Indexed [" + totalBulkItems.get() + "] in [" + (totalBulkTime.get()/1000) + "s] of indexing"+"[" + ((System.currentTimeMillis() - runStartTime)/1000) + "s] of wall clock"+" for ["+ (float)(1000.0*totalBulkItems.get())/(System.currentTimeMillis() - runStartTime) + "rec/s]");
           }
           if (response.hasFailures()) {
-            System.out.println("failed to execute" + response.buildFailureMessage());
+              System.out.println("failed to execute" + response.buildFailureMessage());
+              failedRequests.increment(1);
+              // write failed records out to hdfs for reloading
+              for(String record : records) {
+                  context.write(NullWritable.get(), new Text(record));
+              }
+          } else {
+              succeededRequests.increment(1);
+              indexedRecords.increment(bulkSize);
           }
         } catch (Exception e) {
           System.out.println("Bulk request failed: " + e.getMessage());
+          failedRequests.increment(1);
           throw new RuntimeException(e);
         }
+        records.clear();
         currentRequest = client.prepareBulk();
       }
     }
@@ -108,6 +136,14 @@ public class ElasticBulkLoader extends Configured implements Tool {
         System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins_dir"));
         System.setProperty("es.config",conf.get("elasticsearch.config_yaml"));
 
+        // Initialize arraylist for storing string records
+        this.records = new ArrayList<String>(bulkSize);
+
+        // Counters
+        succeededRequests = context.getCounter(BulkRequests.SUCCEEDED);
+        failedRequests    = context.getCounter(BulkRequests.FAILED);
+        indexedRecords    = context.getCounter(BulkRequests.INDEXED);    
+        
         // start client type
         Integer transportClient = Integer.parseInt(conf.get("elasticsearch.transport_client"));
         if(transportClient == 1) {
@@ -164,7 +200,7 @@ public class ElasticBulkLoader extends Configured implements Tool {
     job.setJobName("ElasticBulkLoader");
     job.setMapperClass(IndexMapper.class);
     job.setNumReduceTasks(0);
-    job.setOutputKeyClass(Text.class);
+    job.setOutputKeyClass(NullWritable.class);
     job.setOutputValueClass(Text.class);
 
     List<String> other_args = new ArrayList<String>();
