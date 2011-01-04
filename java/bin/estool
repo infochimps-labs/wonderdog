@@ -76,6 +76,14 @@ task :delete_index do
   sh "curl -s -XDELETE \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.index_name]
 end
 
+#
+# Refreshes the index and makes all operations since the last refresh avaialable for search
+#
+task :refresh_index do
+  sh "curl -s -XPOST \"http://%s:%s/%s/_refresh\"" % [Settings.host, Settings.port, Settings.index_name]
+end
+
+
 Rake::Task[Settings.rest.first].invoke
 
 
