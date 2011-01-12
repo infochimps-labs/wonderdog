@@ -94,3 +94,22 @@ tester.each_word do |query_string|
   $stderr.puts(n_queries_executed) if n_queries_executed % 20 == 0
   break if n_queries_executed >= Settings.queries
 end
+
+
+#
+# TODO: monkeypatch rubberband to use keepalives:
+#
+      # def connect!
+      #   unless defined?(@@patron_session)
+      #     @@patron_session = Patron::Session.new
+      #     @session = @@patron_session
+      #     @session.base_url = @server
+      #     @session.timeout = @options[:timeout]
+      #     @session.headers['User-Agent'] = 'ElasticSearch.rb v0.1'
+      #     @session.headers['Connection'] = 'Keep-Alive'
+      #   else
+      #     @session = @@patron_session
+      #   end
+      #   @request_count = 1
+      # end
+
