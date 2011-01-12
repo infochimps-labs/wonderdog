@@ -89,7 +89,7 @@ tester.each_word do |query_string|
     n_queries_executed, Time.now.utc.to_flat, "%7.1f"%elapsed,
     "%7.1f"%( 1000 * elapsed / n_queries_executed.to_f ),
     result.total_entries, result._shards['successful'],
-    Settings.index_name, NODENAME,
+    Settings.es_index, NODENAME,
     query_string)
   $stderr.puts(n_queries_executed) if n_queries_executed % 20 == 0
   break if n_queries_executed >= Settings.queries
