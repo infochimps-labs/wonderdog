@@ -1,0 +1,26 @@
+
+http://groups.google.com/a/elasticsearch.com/group/users/browse_thread/thread/8517d7ccdaa6a72b
+
+We have 3 servers in each data center, with 28M docs consuming 170G 
+disk (soon to shrink with ES 0.14), handling about 6k req/min for 
+client queries and 195k document matches/minute for alerting purposes. 
+With our hardware, we're hardly taxing them and still averaging 
+30-35ms response times. 
+
+
+
+
+
+
+14409	tweet-2009q3pre
+26590	tweet-2009q4
+23923	tweet-2010q1
+ 9278	tweet-201004
+12216	tweet-201005
+13735	tweet-201006
+15580	tweet-201007
+ 1472	tweet-201008
+  916	tweet-201009
+ 1910	tweet-201010
+ 2023	tweet-201011
+ 
