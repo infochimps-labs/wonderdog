@@ -104,11 +104,12 @@ h2. Wonderdog Command-line options
 
 h2. Admin
 
-There are a number of convenience commands in @bin/estool@. Enumerated:
+There are a number of convenience commands in @bin/estool@. Enumerating a few:
 
 * Print status of all indices as a json hash to the terminal
+
 <pre><code>
-# See everything! (tmi)
+# See everything (tmi)
 bin/estool --host=<elasticsearch_host> status
 
 # Just see index level stuff on docs and replicas:
