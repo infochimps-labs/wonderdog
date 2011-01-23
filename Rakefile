@@ -1,13 +1,12 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-require 'wukong'
 require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
 WORK_DIR=File.expand_path(File.dirname(__FILE__))
 Settings.define :src,         :default => "#{WORK_DIR}/src",                :description => "Java source dir"
 Settings.define :target,      :default => "#{WORK_DIR}/build",              :description => "Build target, this is where compiled classes live"
-Settings.define :main_class,  :default => "ElasticBulkLoader",              :description => "Main java class to run"
+Settings.define :jar_name,    :default => "wonderdog",                      :description => "Name of the target jar"
 Settings.define :hadoop_home, :default => "/usr/lib/hadoop",                :description => "Path to hadoop installation",       :env_var => "HADOOP_HOME"
 Settings.define :es_home,     :default => "/usr/local/share/elasticsearch", :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
 Settings.resolve!
@@ -31,20 +30,20 @@ end
 
 def srcs options
   sources = Dir[
-    "#{options.src}/*.java",
+    "#{options.src}/**/*.java",
   ].inject([]){|sources, src| sources << src; sources}
   sources.join(' ')
 end
 
-#
-# FIXME: Needs to be idempotent ...
-#
-task :compile do
-  puts "Compiling #{options.src} ..."
-  snakeized = options.main_class.underscore
-  mkdir_p File.join(options.target, snakeized)
-  system "javac -cp #{classpath(options)} -d #{options.target}/#{snakeized} #{srcs(options)}"
-  system "jar -cvf  #{options.target}/#{snakeized}.jar -C #{options.target}/#{snakeized} . "
+jar_dir = File.join(options.target, options.jar_name)
+directory jar_dir
+
+task :compile => jar_dir do
+  sh "javac -cp #{classpath(options)} -d #{jar_dir} #{srcs(options)}"
 end
 
-task :default => [:compile]
+task :jar => :compile do
+  sh "jar -cvf  #{jar_dir}.jar -C #{jar_dir} . "
+end
+
+task :default => [:jar]
