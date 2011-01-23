@@ -87,14 +87,16 @@ public class WonderDog extends Configured implements Tool {
             //
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
             for(int i = 0; i < fields.length; i++) {
-                if (i < fieldNames.length) {
+                if (i < fieldNames.length && fields[i].length() != 0) {
                     builder.field(fieldNames[i], fields[i]);
                 }
             }
             builder.endObject();
             if (idField == -1) {
+                // Document has no inherent id
                 currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
             } else {
+                // Use one of the docuement's fields as the id
                 currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[idField]).create(false).source(builder));
             }
             processBulkIfNeeded(context);
