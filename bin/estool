@@ -11,6 +11,7 @@ Settings.define :index_name,               :description => "Which index to addre
 Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
 Settings.define :object_type,              :description => "When 'putting' the mapping, which object type to update"
 Settings.define :object_def_file,          :description => "When 'putting' the mapping, full path to json config file describing object and its fields"
+Settings.define :query_string,             :description => "Query string to use when querying the index"
 Settings.resolve!
 
 #
@@ -93,6 +94,12 @@ task :put_mapping do
   sh "curl -s -XPUT \"http://%s:%s/%s/%s/_mapping\" -d '#{json_def}'" % [Settings.host, Settings.port, Settings.index_name, Settings.object_type]
 end
 
+#
+# Perform query against a single index
+#
+task :query do
+  sh "curl -s -XGET \"http://%s:%s/%s/_search?q=%s\"" % [Settings.host, Settings.port, Settings.index_name, Settings.query_string]
+end
 
 Rake::Task[Settings.rest.first].invoke
 
