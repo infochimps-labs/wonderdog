@@ -134,9 +134,9 @@ public class WonderDog extends Configured implements Tool {
             // Set all task level config
             Configuration conf = context.getConfiguration();
             this.indexName  = conf.get("wonderdog.index.name");
-            this.bulkSize   = Integer.parseInt(conf.get("wonderdog.bulk.size"));
+            this.bulkSize   = conf.getInt("wonderdog.bulk.size");
             this.fieldNames = conf.get("wonderdog.field.names").split(",");
-            this.idField    = Integer.parseInt(conf.get("wonderdog.id.field"));
+            this.idField    = conf.getInt("wonderdog.id.field");
             this.objType    = conf.get("wonderdog..object.type");
             System.setProperty("es.path.plugins",conf.get("wonderdog.plugins.dir"));
             System.setProperty("es.config",conf.get("wonderdog.config"));
