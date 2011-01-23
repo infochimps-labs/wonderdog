@@ -92,7 +92,11 @@ public class WonderDog extends Configured implements Tool {
                 }
             }
             builder.endObject();
-            currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[idField]).create(false).source(builder));
+            if (idField == -1) {
+                currentRequest.add(Requests.indexRequest(indexName).type(objType).create(false).source(builder));
+            } else {
+                currentRequest.add(Requests.indexRequest(indexName).type(objType).id(fields[idField]).create(false).source(builder));
+            }
             processBulkIfNeeded(context);
         }
 
@@ -134,9 +138,9 @@ public class WonderDog extends Configured implements Tool {
             // Set all task level config
             Configuration conf = context.getConfiguration();
             this.indexName  = conf.get("wonderdog.index.name");
-            this.bulkSize   = conf.getInt("wonderdog.bulk.size");
+            this.bulkSize   = Integer.parseInt(conf.get("wonderdog.bulk.size"));
             this.fieldNames = conf.get("wonderdog.field.names").split(",");
-            this.idField    = conf.getInt("wonderdog.id.field");
+            this.idField    = Integer.parseInt(conf.get("wonderdog.id.field"));
             this.objType    = conf.get("wonderdog..object.type");
             System.setProperty("es.path.plugins",conf.get("wonderdog.plugins.dir"));
             System.setProperty("es.config",conf.get("wonderdog.config"));

@@ -6,7 +6,7 @@ require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 Settings.define :index_name,       :required => true,                                  :description => "Index to write data to"
 Settings.define :object_type,      :default => "tweet",                                :description => "Type of object we're indexing"
 Settings.define :field_names,      :default => "rsrc,tweet_id,created_at,user_id,screen_name,search_id,in_reply_to_user_id,in_reply_to_screen_name,in_reply_to_search_id,in_reply_to_status_id,text,source,lang,lat,lng,retweeted_count,rt_of_user_id,rt_of_screen_name,rt_of_tweet_id,contributors", :description => "Comma separated list of field names"
-Settings.define :id_field,         :default => "1",                                    :description => "Index of field to use as object id (counting from 0; default 1)"
+Settings.define :id_field,         :default => "1",                                    :description => "Index of field to use as object id (counting from 0; default 1), use -1 if no id field"
 Settings.define :bulk_size,        :default => "1000",                                 :description => "Number of records per bulk request"
 Settings.define :es_home,          :default => "/usr/local/share/elasticsearch",       :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
 Settings.define :es_config,        :default => "/etc/elasticsearch/elasticsearch.yml", :description => "Path to elasticsearch config"
@@ -42,7 +42,7 @@ class Wonderdog
       "-Dwonderdog.index.name=#{options.index_name}",
       "-Dwonderdog.object.type=#{options.object_type}",
       "-Dwonderdog.id.field=#{options.id_field}",
-      "-Dwonderdog.field.names=#{options.field.names}",
+      "-Dwonderdog.field.names=#{options.field_names}",
       "-Dwonderdog.bulk.size=#{options.bulk_size}",
       "-Dwonderdog.config=#{options.es_config}",
       "-Dwonderdog.plugins.dir=#{options.es_home}/plugins",

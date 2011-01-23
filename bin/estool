@@ -9,6 +9,8 @@ Settings.define :host,  :required => true, :description => "Elastic search clust
 Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
 Settings.define :index_name,               :description => "Which index to address?"
 Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
+Settings.define :object_type,              :description => "When 'putting' the mapping, which object type to update"
+Settings.define :object_def_file,          :description => "When 'putting' the mapping, full path to json config file describing object and its fields"
 Settings.resolve!
 
 #
@@ -81,6 +83,14 @@ end
 #
 task :refresh_index do
   sh "curl -s -XPOST \"http://%s:%s/%s/_refresh\"" % [Settings.host, Settings.port, Settings.index_name]
+end
+
+#
+# Puts simple mapping from json file into the given index
+#
+task :put_mapping do
+  json_def = File.read(Settings.object_def_file)
+  sh "curl -s -XPUT \"http://%s:%s/%s/%s/_mapping\" -d '#{json_def}'" % [Settings.host, Settings.port, Settings.index_name, Settings.object_type]
 end
 
 
