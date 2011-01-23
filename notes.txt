@@ -1,0 +1,10 @@
+<h2>Install and start ElasticSearch</h2>
+
+<pre class="brush: bash">
+$: wget http://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.14.2.zip
+$: sudo mv elasticsearch-0.14.2 /usr/local/share/
+$: sudo ln -s /usr/local/share/elasticsearch-0.14.2 /usr/local/share/elasticsearch
+$: /usr/local/share/elasticsearch/bin/elasticsearch
+</pre>
+
+You'll probably want to change the configuration for your particular setup but that should at least get you started.
