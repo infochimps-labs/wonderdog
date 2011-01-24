@@ -39,45 +39,41 @@ import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.ExceptionsHelper;
 
-public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWritable> implements Configurable{
+/**
+   
+   Output format for writing hashmaps into elasticsearch.
+   
+ */
+public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWritable> implements Configurable {
+    
     static Log LOG = LogFactory.getLog(ElasticSearchOutputFormat.class);
     private Configuration conf = null;
-
-    private Node node;
-    private Client client;
     private String indexName;
     private int bulkSize;
     private int idField;
     private String objType;
     private String[] fieldNames;
     
-    // Used for bookkeeping purposes
-    private AtomicLong totalBulkTime  = new AtomicLong();
-    private AtomicLong totalBulkItems = new AtomicLong();
-    private Random     randgen        = new Random();
-    private long       runStartTime   = System.currentTimeMillis();
-
     protected class ElasticSearchRecordWriter extends RecordWriter<NullWritable, MapWritable> {
 
         private Node node;
         private Client client;
         private volatile BulkRequestBuilder currentRequest;
         
-        public ElasticSearchRecordWriter(Node node, Client client) {
-            this.node   = node;
-            this.client = client;
+        public ElasticSearchRecordWriter() {
+            start_embedded_client();
+            initialize_index(indexName);
             currentRequest = client.prepareBulk();
         }
 
-        @Override
         public void close(TaskAttemptContext context) throws IOException {
+            LOG.info("Closing record writer");
             client.close();
             if (node != null) {
                 node.close();
             }
         }
 
-        @Override
         public void write(NullWritable key, MapWritable fields) throws IOException {
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
             for (Map.Entry<Writable, Writable> entry : fields.entrySet()) {
@@ -91,15 +87,14 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
             } else {
                 // Use one of the docuement's fields as the id
-                // currentRequest.add(Requests.indexRequest(indexName).type(objType).create(false).source(builder));
+                String record_id = fields.get(fieldNames[idField]).toString();
+                currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));
             }
             processBulkIfNeeded();
         }
 
         private void processBulkIfNeeded() {
-            totalBulkItems.incrementAndGet();
             if (currentRequest.numberOfActions() >= bulkSize) {
-                LOG.info("Sending bulk request of ["+currentRequest.numberOfActions()+"] records");
                 try {
                     BulkResponse response = currentRequest.execute().actionGet();
                 } catch (Exception e) {
@@ -109,14 +104,32 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 currentRequest = client.prepareBulk();
             }
         }
+
+        private void initialize_index(String indexName) {
+            LOG.info("Initializing index");
+            try {
+                client.admin().indices().prepareCreate(indexName).execute().actionGet();
+            } catch (Exception e) {
+                if (ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException) {
+                    LOG.warn("Index ["+indexName+"] already exists");
+                }
+            }
+        }
+
+        //
+        // Starts an embedded elasticsearch client (ie. data = false)
+        //
+        private void start_embedded_client() {
+            LOG.info("Starting embedded elasticsearch client ...");
+            this.node   = NodeBuilder.nodeBuilder().client(true).node();
+            this.client = node.client();
+        }
     }
 
-    @Override
-        public RecordWriter<NullWritable, MapWritable> getRecordWriter(final TaskAttemptContext context) throws IOException, InterruptedException {
-        return new ElasticSearchRecordWriter(node, client);
+    public RecordWriter<NullWritable, MapWritable> getRecordWriter(final TaskAttemptContext context) throws IOException, InterruptedException {
+        return new ElasticSearchRecordWriter();
     }
 
-    @Override
     public void setConf(Configuration conf) {
         this.indexName  = conf.get("wonderdog.index.name");
         this.bulkSize   = Integer.parseInt(conf.get("wonderdog.bulk.size"));
@@ -125,31 +138,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         this.objType    = conf.get("wonderdog.object.type");
         System.setProperty("es.path.plugins",conf.get("wonderdog.plugins.dir"));
         System.setProperty("es.config",conf.get("wonderdog.config"));
-
-        // Basic setup
-        start_embedded_client();
-        initialize_index(indexName);        
     }
-
-    private void initialize_index(String indexName) {
-        try {
-            client.admin().indices().prepareCreate(indexName).execute().actionGet();
-        } catch (Exception e) {
-            if (ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException) {
-                LOG.warn("Index ["+indexName+"] already exists");
-            }
-        }
-    }
-
-    //
-    // Starts an embedded elasticsearch client (ie. data = false)
-    //
-    private void start_embedded_client() {
-        LOG.info("Starting embedded elasticsearch client ...");
-        this.node   = NodeBuilder.nodeBuilder().client(true).node();
-        this.client = node.client();
-    }
-
 
     public Configuration getConf() {
         return conf;
