@@ -130,6 +130,7 @@ public class ElasticSearchOutputFormat extends FileOutputFormat<NullWritable, Ma
         return new ElasticSearchRecordWriter();
     }
 
+    // FIXME: options used here should NOT be namespaced with 'wonderdog'
     public void setConf(Configuration conf) {
         this.indexName  = conf.get("wonderdog.index.name");
         this.bulkSize   = Integer.parseInt(conf.get("wonderdog.bulk.size"));
