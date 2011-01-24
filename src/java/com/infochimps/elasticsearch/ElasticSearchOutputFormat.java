@@ -15,6 +15,7 @@ import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.MapWritable;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -56,10 +57,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
     private Random     randgen        = new Random();
     private long       runStartTime   = System.currentTimeMillis();
 
-    // Used to hold records and dump in case of failure
-    private ArrayList<String> records;
-        
-    protected class ElasticSearchRecordWriter<NullWritable, MapWritable> extends RecordWriter<NullWritable, MapWritable> {
+    protected class ElasticSearchRecordWriter extends RecordWriter<NullWritable, MapWritable> {
 
         private Node node;
         private Client client;
@@ -81,22 +79,21 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
 
         @Override
         public void write(NullWritable key, MapWritable fields) throws IOException {
-            //Need to stuff the fields into elasticsearch xcontent object
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
-            for (Map.Entry<Text, Text> entry : fields.entrySet()) {
+            for (Map.Entry<Writable, Writable> entry : fields.entrySet()) {
                 String name  = entry.getKey().toString();
                 String value = entry.getValue().toString();
                 builder.field(name, value);
             }
-            // builder.endObject();
-            // if (idField == -1) {
-            //     // Document has no inherent id
-            //     currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
-            // } else {
-            //     // Use one of the docuement's fields as the id
-            //     // currentRequest.add(Requests.indexRequest(indexName).type(objType).create(false).source(builder));
-            // }
-            // processBulkIfNeeded();
+            builder.endObject();
+            if (idField == -1) {
+                // Document has no inherent id
+                currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
+            } else {
+                // Use one of the docuement's fields as the id
+                // currentRequest.add(Requests.indexRequest(indexName).type(objType).create(false).source(builder));
+            }
+            processBulkIfNeeded();
         }
 
         private void processBulkIfNeeded() {
@@ -104,9 +101,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             if (currentRequest.numberOfActions() >= bulkSize) {
                 LOG.info("Sending bulk request of ["+currentRequest.numberOfActions()+"] records");
                 try {
-                    long startTime        = System.currentTimeMillis();
                     BulkResponse response = currentRequest.execute().actionGet();
-                    totalBulkTime.addAndGet(System.currentTimeMillis() - startTime);
                 } catch (Exception e) {
                     LOG.warn("Bulk request failed: " + e.getMessage());
                     throw new RuntimeException(e);
@@ -118,7 +113,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
 
     @Override
         public RecordWriter<NullWritable, MapWritable> getRecordWriter(final TaskAttemptContext context) throws IOException, InterruptedException {
-        return new ElasticSearchRecordWriter<NullWritable, MapWritable>(node, client);
+        return new ElasticSearchRecordWriter(node, client);
     }
 
     @Override
@@ -130,12 +125,6 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         this.objType    = conf.get("wonderdog.object.type");
         System.setProperty("es.path.plugins",conf.get("wonderdog.plugins.dir"));
         System.setProperty("es.config",conf.get("wonderdog.config"));
-
-        //
-        // Initialize arraylist for storing string records. Used for sending
-        // failed records to disk for later re-indexing.
-        //
-        this.records = new ArrayList<String>(bulkSize);
 
         // Basic setup
         start_embedded_client();
@@ -166,14 +155,11 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         return conf;
     }
   
-    @Override
-        public void checkOutputSpecs(JobContext context) throws IOException,
+    public void checkOutputSpecs(JobContext context) throws IOException,
         InterruptedException {
-        // TODO Check if the table exists?
     }
 
-    @Override
-        public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {
+    public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {
         return new ElasticSearchOutputCommitter();
     }
 }
