@@ -44,7 +44,7 @@ import org.elasticsearch.ExceptionsHelper;
    Output format for writing hashmaps into elasticsearch.
    
  */
-public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWritable> implements Configurable {
+public class ElasticSearchOutputFormat extends FileOutputFormat<NullWritable, MapWritable> implements Configurable {
     
     static Log LOG = LogFactory.getLog(ElasticSearchOutputFormat.class);
     private Configuration conf = null;
@@ -53,7 +53,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
     private int idField;
     private String objType;
     private String[] fieldNames;
-    
+
     protected class ElasticSearchRecordWriter extends RecordWriter<NullWritable, MapWritable> {
 
         private Node node;
@@ -142,13 +142,5 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
 
     public Configuration getConf() {
         return conf;
-    }
-  
-    public void checkOutputSpecs(JobContext context) throws IOException,
-        InterruptedException {
-    }
-
-    public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {
-        return new ElasticSearchOutputCommitter();
-    }
+    }  
 }

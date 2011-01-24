@@ -13,6 +13,7 @@ Settings.define :es_config,        :default => "/etc/elasticsearch/elasticsearch
 Settings.define :rm,               :default => false,                                  :description => "Remove existing output?"
 Settings.define :hadoop_home,      :default => "/usr/lib/hadoop",                      :description => "Path to hadoop installation", :env_var => "HADOOP_HOME"
 Settings.define :min_split_size,   :default => "5000000000",                           :description => "Min split size for maps"
+Settings.define :test_outputfmt,   :default => false,                                  :description => "Use this flag to run job that test the ElasticSearchOutputFormat"
 Settings.resolve!
 
 
@@ -53,6 +54,7 @@ class Wonderdog
   end
 
   def mainclass
+    return "com.infochimps.elasticsearch.ElasticTest" if Settings.test_outputfmt
     "com.infochimps.elasticsearch.wonderdog.WonderDog"
   end
 
