@@ -1,4 +1,4 @@
-export ES_CONF_DIR=${ES_WORK_DIR-/etc/elasticsearch}
+export ES_CONF_DIR=${ES_CONF_DIR-/etc/elasticsearch}
 export ES_WORK_DIR=${ES_WORK_DIR-/mnt/elasticsearch/work}
 export ES_DATA_DIR=${ES_DATA_DIR-/mnt/elasticsearch/data}
 

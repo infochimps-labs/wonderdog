@@ -6,14 +6,14 @@ h2. Requirements
 
 h3. Hadoop cluster setup:
 
-Wonderdog makes use of hadoop to do its bulk loading so you'll need to have a fully functional hadoop cluster lying around. Additionally, each machine in the hadoop cluster will need to have "elasticsearch":http://www.elasticsearch.com/download/ installed in the same location on each machine. Defaults for most everything will want elasticsearch itself to live in @/usr/local/share/elasticsearch@ and the configuration @elasticsearch/config/*@ to actually live in @/etc/elasticsearch@. For simplicity you might set @ES_HOME@ and @ES_CONF@ to point to the right places. As an example setup process (with elasticsearch 0.13):
+Wonderdog makes use of hadoop to do its bulk loading so you'll need to have a fully functional hadoop cluster lying around. Additionally, each machine in the hadoop cluster will need to have "elasticsearch":http://www.elasticsearch.com/download/ installed in the same location on each machine. Defaults for most everything will want elasticsearch itself to live in @/usr/local/share/elasticsearch@ and the configuration @elasticsearch/config/*@ to actually live in @/etc/elasticsearch@. For simplicity you might set @ES_HOME@ and @ES_CONF@ to point to the right places. As an example setup process (with elasticsearch 0.14.2):
 
 <pre><code>
-wget http://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.13.0.zip
-unzip elasticsearch-0.13.0.zip
-sudo mv elasticsearch-0.13.0 /usr/local/share/
-sudo ln -s /usr/local/share/elasticsearch-0.13.0 /usr/local/share/elasticsearch
-sudo cp /usr/local/share/elasticsearch/config/* /etc/elasticsearch/
+$: wget http://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.14.2.zip
+$: unzip elasticsearch-0.14.2.zip
+$: sudo mv elasticsearch-0.14.2 /usr/local/share/
+$: sudo ln -s /usr/local/share/elasticsearch-0.14.2 /usr/local/share/elasticsearch
+$: sudo cp config/* /etc/elasticsearch/
 </code></pre>
 
 Then, make all your changes to the configuration files in @/etc/elasticsearch@. See @config/*@ for a set of example configuration files.
@@ -23,27 +23,7 @@ h3. ElasticSearch cluster setup:
 Follow the same procedure as that for the hadoop cluster setup. Once elasticsearch is installed on all the machines you'll want to start the daemons. It's generally a good idea to have created an elasticsearch user and run the daemons as this user. Then:
 
 <pre><code>
-# Where does elasticsearch live?
-export ES_HOME=/usr/local/share/elasticsearch
-export ES_CONF_DIR=/etc/elasticsearch
-export ES_INCLUDE=$ES_CONF_DIR/elasticsearch.in.sh
-
-# Where does data live?
-ES_DATA_ROOT=/mnt/elasticsearch
-export ES_DATA_DIR=$ES_DATA_ROOT/data
-export ES_WORK_DIR=$ES_DATA_ROOT/work
-
-# bump the # of open files way way up
-ulimit -n 65536
-# allow elasticsearch to lock itself into memory if JNA is installed
-ulimit -l unlimited
-
-# Force the heap size
-export ES_MAX_MEM=${ES_MAX_MEM-1800m}
-export ES_MIN_MEM=$ES_MAX_MEM
-
-# lauch daemon
-sudo -u elasticsearch $ES_HOME/bin/elasticsearch -Des.config=/etc/elasticsearch/elasticsearch.yml&
+sudo -u elasticsearch $ES_HOME/bin/elasticsearch -Des.config=/etc/elasticsearch/elasticsearch.yml
 </code></pre>
 
 should get you started. Do this for every machine in you elasticsearch cluster. Finally, both
@@ -53,13 +33,13 @@ should get you started. Do this for every machine in you elasticsearch cluster. 
 
 should indicate a happy elasticsearch cluster.
 
-In addition to the setup for each cluster you'll need to ensure they can talk to each other (telnet, ssh, ?).
+In addition to the setup for each cluster you'll need to ensure they can talk to each other. This is addressed in the documentation for elasticsearch itself.
 
 h2. Usage
 
 Once you've got a working set up you should be ready to launch your bulkload process. Right now the bulkload only accepts tsv though json and avro support should be possible with straightforward changes (contributions?).
 
-The best way to explain is with an example. Say you've got a tsv file of user records (name,login,email,description) and you want to index all the fields. I'm assuming you're going to write to an index called @users@ with objects of type @user@ (elasticsearch will create this object automatically the first time you upload one). The workflow is as follows:
+The best way to explain is with an example. Say you've got a tsv file of user records (name,login,email,description) and you want to index all the fields. Assuming you're going to write to an index called @users@ with objects of type @user@ (elasticsearch will create this object automatically the first time you upload one). The workflow is as follows:
 
 * Create the @users@ index:
 
@@ -71,19 +51,27 @@ bin/estool --host=<elasticsearch_host> --index_name=users create_index
 
 <pre><code>
 # Will only work if the hadoop elasticsearch processes can discover the running elasticsearch cluster
-bin/wonderdog --rm --index_name=users --bulk_size=4096 --object_type=user /hdfs/path/to/users.tsv /tmp/log/users-elasticsearch.log
+bin/wonderdog --rm --index_name=users --bulk_size=4096 --object_type=user --field_names=name,login,email,description --id_field=1 /hdfs/path/to/users.tsv /tmp/failed_records/users
 </code></pre>
 
-* Flush the index
+Notice the output path. When the bulk indexing job runs it is possible for index requests to fail for various reasons (too much load, etc). In this case the documents that failed are simply written to the hdfs so they can be retried in a later job.
 
-While the bulkload is running you'll want to periodically flush the index (this is due to a bug in the version of lucene that
-elasticsearch is using at the moment):
+* Refresh Index
+
+After the bulk load is finished you'll want to refresh the index so your documents will actually be searchable:
 
 <pre><code>
-bin/estool --host=<elasticsearch_host> --index_name=users flush_index
+bin/estool --host=<elasticsearch_host> --index_name=users refresh_index
 </code></pre>
 
-Flush one last time at the end of the bulkload.
+* Snapshot Index
+
+You'll definitely want to do this after the bulk load finishes so you don't lose any data in case of cluster failure:
+
+<pre><code>
+bin/estool --host=<elasticsearch_host> --index_name=users snapshot_index
+</code></pre>
+
 
 * Bump the replicas for the index up to at least one.
 
@@ -101,7 +89,67 @@ bin/estool --host=<elasticsearch_host> --index_name=users optimize_index
 
 This will also take a while to finish.
 
+h2. Wonderdog Command-line options
 
+* @index_name@ - Index to write data to. It does not have to exist ahead of time
+* @object_type@ - Type of object to index. The mapping for this object does not have to exist ahead of time. Fields will be updated dynamically by elasticsearch.
+* @field_names@ - A comma separated list of field names describing the tsv record input
+* @id_field@ - Index of field to use as object id (counting from 0; default 1), use -1 if there is no id field
+* @bulk_size@ - Number of records per bulk request sent to elasticsearch cluster
+* @es_home@ - Path to elasticsearch installation, read from the ES_HOME environment variable if it's set
+* @es_config@ - Path to elasticsearch config file (@elasticsearch.yml@)
+* @rm@ - Remove existing output? (true or leave blank)
+* @hadoop_home@ - Path to hadoop installation, read from the HADOOP_HOME environment variable if it's set
+* @min_split_size@ - Min split size for maps
+
+h2. Admin
+
+There are a number of convenience commands in @bin/estool@. Enumerating a few:
+
+* Print status of all indices as a json hash to the terminal
+
+<pre><code>
+# See everything (tmi)
+bin/estool --host=<elasticsearch_host> status
+
+# Just see index level stuff on docs and replicas:
+bin/estool --host=<elasticsearch_host> status | grep -C10 number_of_replicas
+</code></pre>
+
+* Check cluster health (red,green,yellow,relocated shards, etc)
+
+<pre><code>
+bin/estool --host=<elasticsearch_host> health
+</code></pre>
+
+* Set replicas for an index
+
+<pre><code>
+bin/estool --host=<elasticsearch_host> --index_name=<index_name> --replicas=<num_replicas> set_replicas
+</code></pre>
+
+* Optimize an index
+
+<pre><code>
+bin/estool --host=<elasticsearch_host> --index_name=<index_name> optimize_index
+</code></pre>
+
+* Snapshot an index
+
+<pre><code>
+bin/estool --host=<elasticsearch_host> --index_name=<index_name> snapshot_index
+</code></pre>
+
+* Delete an index
+
+You'd better be sure.
+
+<pre><code>
+bin/estool --host=<elasticsearch_host> --index_name=<index_name> delete_index
+</code></pre>
+
+
+And so on. Most of the common rest api operations have be mapped into estool.
 
 h3. How to choose shards, replicas and cluster size: Rules of Thumb.
 

@@ -1,0 +1,12 @@
+{
+    "ufo_sighting" : {
+        "properties" : {
+          "sighted_at"  : {"type" : "string", "store" : "yes"},
+          "reported_at" : {"type" : "string", "store" : "yes"},
+          "location"    : {"type" : "string", "store" : "yes"},
+          "shape"       : {"type" : "string", "store" : "yes"},
+          "duration"    : {"type" : "string", "store" : "yes"},
+          "description" : {"type" : "string", "store" : "yes"}
+        }
+    }
+}
