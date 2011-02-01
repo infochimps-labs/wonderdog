@@ -16,8 +16,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -44,7 +42,7 @@ import org.elasticsearch.ExceptionsHelper;
    Output format for writing hashmaps into elasticsearch.
    
  */
-public class ElasticSearchOutputFormat extends FileOutputFormat<NullWritable, MapWritable> implements Configurable {
+public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWritable> implements Configurable {
     
     static Log LOG = LogFactory.getLog(ElasticSearchOutputFormat.class);
     private Configuration conf = null;
@@ -75,6 +73,7 @@ public class ElasticSearchOutputFormat extends FileOutputFormat<NullWritable, Ma
         }
 
         public void write(NullWritable key, MapWritable fields) throws IOException {
+            LOG.info("index = "+indexName+", bulk size = "+bulkSize+", id field = "+idField+", obj type = "+objType);
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
             for (Map.Entry<Writable, Writable> entry : fields.entrySet()) {
                 String name  = entry.getKey().toString();
@@ -130,18 +129,28 @@ public class ElasticSearchOutputFormat extends FileOutputFormat<NullWritable, Ma
         return new ElasticSearchRecordWriter();
     }
 
-    // FIXME: options used here should NOT be namespaced with 'wonderdog'
     public void setConf(Configuration conf) {
-        this.indexName  = conf.get("wonderdog.index.name");
-        this.bulkSize   = Integer.parseInt(conf.get("wonderdog.bulk.size"));
-        this.fieldNames = conf.get("wonderdog.field.names").split(",");
-        this.idField    = Integer.parseInt(conf.get("wonderdog.id.field"));
-        this.objType    = conf.get("wonderdog.object.type");
-        System.setProperty("es.path.plugins",conf.get("wonderdog.plugins.dir"));
-        System.setProperty("es.config",conf.get("wonderdog.config"));
+        this.indexName  = conf.get("elasticsearch.index.name");
+        this.bulkSize   = Integer.parseInt(conf.get("elasticsearch.bulk.size"));
+        this.fieldNames = conf.get("elasticsearch.field.names").split(",");
+        this.idField    = Integer.parseInt(conf.get("elasticsearch.id.field"));
+        this.objType    = conf.get("elasticsearch.object.type");
+        System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins.dir"));
+        System.setProperty("es.config",conf.get("elasticsearch.config"));
     }
 
     public Configuration getConf() {
         return conf;
-    }  
+    }
+
+    @Override
+    public void checkOutputSpecs(JobContext context) throws IOException, InterruptedException {
+        // TODO Check if the object exists?
+    }
+
+
+    @Override
+    public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {
+        return new ElasticSearchOutputCommitter();
+    }
 }

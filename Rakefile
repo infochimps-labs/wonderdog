@@ -9,6 +9,7 @@ Settings.define :target,      :default => "#{WORK_DIR}/build",              :des
 Settings.define :jar_name,    :default => "wonderdog",                      :description => "Name of the target jar"
 Settings.define :hadoop_home, :default => "/usr/lib/hadoop",                :description => "Path to hadoop installation",       :env_var => "HADOOP_HOME"
 Settings.define :es_home,     :default => "/usr/local/share/elasticsearch", :description => "Path to elasticsearch installation",:env_var => "ES_HOME"
+Settings.define :pig_home,    :default => "/usr/local/share/pig",           :description => "Path to pig installation",          :env_var => "PIG_HOME"
 Settings.resolve!
 options = Settings.dup
 
@@ -20,6 +21,8 @@ def classpath options
   Dir[
     "#{options.hadoop_home}/hadoop*.jar",
     "#{options.hadoop_home}/lib/*.jar",
+    "#{options.pig_home}/pig*.jar",
+    "#{options.pig_home}/lib/*.jar",
     "/etc/elasticsearch/elasticsearch.yml",
     "#{options.es_home}/plugins/*",
     "#{options.es_home}/lib/*.jar",
