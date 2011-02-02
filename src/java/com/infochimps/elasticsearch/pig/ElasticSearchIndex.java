@@ -46,10 +46,10 @@ import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
 
    USAGE:
 
-   STORE records INTO ElasticSearchStorage();
-   STORE records INTO ElasticSearchStorage(idField, bulkSize);
-   STORE records INTO ElasticSearchStorage(idField, bulkSize, esConfig);
-   STORE records INTO ElasticSearchStorage(idField, bulkSize, esConfig, esPlugins);
+   STORE records INTO ElasticSearchIndex();
+   STORE records INTO ElasticSearchIndex(idField, bulkSize);
+   STORE records INTO ElasticSearchIndex(idField, bulkSize, esConfig);
+   STORE records INTO ElasticSearchIndex(idField, bulkSize, esConfig, esPlugins);
 
    where:
 

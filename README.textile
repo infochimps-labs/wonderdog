@@ -151,6 +151,51 @@ bin/estool --host=<elasticsearch_host> --index_name=<index_name> delete_index
 
 And so on. Most of the common rest api operations have be mapped into estool.
 
+
+h2. Using the ElasticSearchIndex storefunc
+
+The wonderdog repo comes with a nifty storage udf for Apache Pig. Here's a simple example of how to use it:
+
+<pre><code>
+register build/wonderdog.jar
+register /usr/local/share/elasticsearch/lib/elasticsearch-0.14.2.jar
+register /usr/local/share/elasticsearch/lib/jline-0.9.94.jar
+register /usr/local/share/elasticsearch/lib/jna-3.2.7.jar
+register /usr/local/share/elasticsearch/lib/log4j-1.2.15.jar
+register /usr/local/share/elasticsearch/lib/lucene-analyzers-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-core-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-fast-vector-highlighter-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-highlighter-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-memory-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-queries-3.0.3.jar
+
+%default INDEX 'ufo_sightings'
+%default OBJ   'ufo_sighting'        
+
+ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv' AS (sighted_at:long, reported_at:long, location:chararray, shape:chararray, duration:chararray, description:chararray);
+STORE ufo_sightings INTO 'es://$INDEX/$OBJ' USING com.infochimps.elasticsearch.pig.ElasticSearchIndex('-1', '1000');
+</code></pre>
+
+Other constructors for the udf include:
+
+* ElasticSearchIndex()
+* ElasticSearchIndex(idField, bulkSize)
+* ElasticSearchIndex(idField, bulkSize, esConfig)
+* ElasticSearchIndex(idField, bulkSize, esConfig, esPlugins)
+
+where:
+
+@idField@   = Which field of the record to use as the record id. If none is passed in
+              then the record is assumed to have no id.
+@bulkSize@  = Number of records for ElasticSearchOutputFormat to batch up before sending
+              a bulk index request to Elastic Search. Default: 1000.
+@esConfig@  = Full path to elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
+@esPlugins@ = Full path to elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
+
+
+
+
+----------------------------------- THIS NEEDS CLEANED UP AND TURNED INTO A COHERENT SECTION, RIGHT NOW IT IS INCOMPREHENSIBLE ----------------------------
 h3. How to choose shards, replicas and cluster size: Rules of Thumb.
 
 sh      = shards
@@ -176,3 +221,5 @@ More shards = more parallel writes
 
 
 curl -XPUT "`cat /etc/motd | grep IP | cuttab 2`:9200/tweet-2010q1/_settings" -d '{ "index":{ "number_of_replicas":1 } }'
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
