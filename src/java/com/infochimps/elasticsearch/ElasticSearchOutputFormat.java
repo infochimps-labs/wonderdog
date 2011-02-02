@@ -39,32 +39,50 @@ import org.elasticsearch.ExceptionsHelper;
 
 /**
    
-   Output format for writing hashmaps into elasticsearch.
+   Output format for writing hashmaps into elasticsearch. Records are batched up and sent
+   in a one-hop manner to the elastic search data nodes that will index them.
    
  */
 public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWritable> implements Configurable {
     
     static Log LOG = LogFactory.getLog(ElasticSearchOutputFormat.class);
     private Configuration conf = null;
-    private String indexName;
-    private int bulkSize;
-    private int idField;
-    private String objType;
-    private String[] fieldNames;
 
     protected class ElasticSearchRecordWriter extends RecordWriter<NullWritable, MapWritable> {
 
         private Node node;
         private Client client;
+        private String indexName;
+        private int bulkSize;
+        private int idField;
+        private String objType;
+        private String[] fieldNames;
         private volatile BulkRequestBuilder currentRequest;
         
-        public ElasticSearchRecordWriter() {
+        public ElasticSearchRecordWriter(TaskAttemptContext context) {
+            Configuration conf = context.getConfiguration();
+            this.indexName  = conf.get("elasticsearch.index.name");
+            this.bulkSize   = Integer.parseInt(conf.get("elasticsearch.bulk.size"));
+            this.fieldNames = conf.get("elasticsearch.field.names").split(",");
+            this.idField    = Integer.parseInt(conf.get("elasticsearch.id.field"));
+            this.objType    = conf.get("elasticsearch.object.type");
+            System.setProperty("es.config",conf.get("elasticsearch.config"));
+            System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins.dir"));
             start_embedded_client();
             initialize_index(indexName);
             currentRequest = client.prepareBulk();
         }
 
+        /**
+           Need to index any remaining content.
+         */
         public void close(TaskAttemptContext context) throws IOException {
+            try {
+                BulkResponse response = currentRequest.execute().actionGet();
+            } catch (Exception e) {
+                LOG.warn("Bulk request failed: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
             LOG.info("Closing record writer");
             client.close();
             if (node != null) {
@@ -73,7 +91,6 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         }
 
         public void write(NullWritable key, MapWritable fields) throws IOException {
-            LOG.info("index = "+indexName+", bulk size = "+bulkSize+", id field = "+idField+", obj type = "+objType);
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
             for (Map.Entry<Writable, Writable> entry : fields.entrySet()) {
                 String name  = entry.getKey().toString();
@@ -126,17 +143,10 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
     }
 
     public RecordWriter<NullWritable, MapWritable> getRecordWriter(final TaskAttemptContext context) throws IOException, InterruptedException {
-        return new ElasticSearchRecordWriter();
+        return new ElasticSearchRecordWriter(context);
     }
 
     public void setConf(Configuration conf) {
-        this.indexName  = conf.get("elasticsearch.index.name");
-        this.bulkSize   = Integer.parseInt(conf.get("elasticsearch.bulk.size"));
-        this.fieldNames = conf.get("elasticsearch.field.names").split(",");
-        this.idField    = Integer.parseInt(conf.get("elasticsearch.id.field"));
-        this.objType    = conf.get("elasticsearch.object.type");
-        System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins.dir"));
-        System.setProperty("es.config",conf.get("elasticsearch.config"));
     }
 
     public Configuration getConf() {
@@ -147,7 +157,6 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
     public void checkOutputSpecs(JobContext context) throws IOException, InterruptedException {
         // TODO Check if the object exists?
     }
-
 
     @Override
     public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {

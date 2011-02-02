@@ -38,22 +38,61 @@ import org.apache.pig.impl.util.UDFContext;
 
 
 import com.google.common.collect.Lists;
-
 import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
 
+/**
+   Pig storefunc for Elastic Search. Takes tuples of any primitive type, converts them
+   to strings, and indexes them.
+
+   USAGE:
+
+   STORE records INTO ElasticSearchStorage();
+   STORE records INTO ElasticSearchStorage(idField, bulkSize);
+   STORE records INTO ElasticSearchStorage(idField, bulkSize, esConfig);
+   STORE records INTO ElasticSearchStorage(idField, bulkSize, esConfig, esPlugins);
+
+   where:
+
+   idField   = Which field of the record to use as the record id. If none is passed in
+               then the record is assumed to have no id.
+   bulkSize  = Number of records for ElasticSearchOutputFormat to batch up before sending
+               a bulk index request to Elastic Search. Default: 1000.
+   esConfig  = Full path to elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
+   esPlugins = Full path to elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
+   
+ */
 public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface {
 
+    private static final Log LOG = LogFactory.getLog(ElasticSearchIndex.class);
+    
     protected RecordWriter writer = null;
     protected String idField;
     protected String bulkSize;
+    protected String esConfig;
+    protected String esPlugins;
 
-    private static final Log LOG = LogFactory.getLog(ElasticSearchIndex.class);
-
-    public ElasticSearchIndex(String idField, String bulkSize) throws IOException {
-        this.idField  = idField;
-        this.bulkSize = bulkSize;
+    public ElasticSearchIndex() {
+        this("-1", "1000");
     }
 
+    public ElasticSearchIndex(String idField, String bulkSize) {
+        this(idField, bulkSize, "/etc/elasticsearch/elasticsearch.yml");
+    }
+
+    public ElasticSearchIndex(String idField, String bulkSize, String esConfig) {
+        this(idField, bulkSize, esConfig, "/usr/local/share/elasticsearch/plugins");
+    }
+
+    public ElasticSearchIndex(String idField, String bulkSize, String esConfig, String esPlugins) {
+        this.idField   = idField;
+        this.bulkSize  = bulkSize;
+        this.esConfig  = esConfig;
+        this.esPlugins = esPlugins;
+    }
+
+    /**
+       Check that schema is reasonable and serialize the field names as a string for later use.
+     */
     @Override
     public void checkSchema(ResourceSchema s) throws IOException {
         UDFContext context  = UDFContext.getUDFContext();
@@ -66,43 +105,50 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
         property.setProperty("elasticsearch.pig.field.names", fieldNames);
     }
 
+    /**
+       Look at passed in location and configuration and set options. Note that, since this
+       is called more than once, we need to make sure and not change anything we've already
+       set.
+     */
     @Override
     public void setStoreLocation(String location, Job job) throws IOException {
-        LOG.info("Setting location...");
-        LOG.info("location = "+location);
         String[] es_store  = location.substring(5).split("/");
         if (es_store.length != 2) {
             throw new RuntimeException("Please specify a valid elasticsearch index, eg. es://myindex/myobj");
         }
         Configuration conf = job.getConfiguration();
-        try {
-            conf.set("elasticsearch.index.name", es_store[0]);
-            conf.set("elasticsearch.object.type", es_store[1]);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            throw new RuntimeException("You must specify both an index and an object type.");
+        // Only set if we haven't already
+        if (conf.get("elasticsearch.index.name") == null) {
+            try {
+                conf.set("elasticsearch.index.name", es_store[0]);
+                conf.set("elasticsearch.object.type", es_store[1]);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new RuntimeException("You must specify both an index and an object type.");
+            }
+            conf.set("elasticsearch.bulk.size", bulkSize);
+            conf.set("elasticsearch.id.field", idField);
+            conf.set("elasticsearch.config", esConfig);
+            conf.set("elasticsearch.plugins.dir", esPlugins);
+            UDFContext context  = UDFContext.getUDFContext();
+            Properties property = context.getUDFProperties(ResourceSchema.class);
+            conf.set("elasticsearch.field.names", property.getProperty("elasticsearch.pig.field.names"));
         }
-        conf.set("elasticsearch.bulk.size", bulkSize);
-        conf.set("elasticsearch.id.field", idField);
-        LOG.info("id field = "+conf.get("elasticsearch.id.field"));
-        UDFContext context  = UDFContext.getUDFContext();
-        Properties property = context.getUDFProperties(ResourceSchema.class);
-        conf.set("elasticsearch.field.names", property.getProperty("elasticsearch.pig.field.names"));
     }
 
     @Override
     public OutputFormat getOutputFormat() throws IOException {
-        LOG.info("Getting output format...");
         return new ElasticSearchOutputFormat();
     }
 
     // Suppressing unchecked warnings for RecordWriter, which is not parameterized by StoreFuncInterface
     @Override
     public void prepareToWrite(@SuppressWarnings("rawtypes") RecordWriter writer) throws IOException {
-        LOG.info("Preparing to write...");
         this.writer = writer;
     }
 
-    // Suppressing unchecked warnings for RecordWriter, which is not parameterized by StoreFuncInterface
+    /**
+       Map a tuple object into a map-writable object for elasticsearch.
+     */
     @SuppressWarnings("unchecked")
     @Override
     public void putNext(Tuple t) throws IOException {
@@ -115,7 +161,7 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
                 try {
                     record.put(new Text(fieldNames[i]), new Text(t.get(i).toString()));
                 } catch (NullPointerException e) {
-                    LOG.info("fixme. trying to index null field, should just increment a hadoop counter instead");
+                    LOG.info("Increment null field counter.");
                 }
             }
         }
@@ -128,7 +174,5 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
     
     @Override
     public void cleanupOnFailure(String location, Job job) throws IOException {
-
     }
-
 }
