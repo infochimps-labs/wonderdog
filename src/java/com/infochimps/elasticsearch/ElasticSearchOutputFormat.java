@@ -63,8 +63,10 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             Configuration conf = context.getConfiguration();
             this.indexName  = conf.get("elasticsearch.index.name");
             this.bulkSize   = Integer.parseInt(conf.get("elasticsearch.bulk.size"));
+            LOG.info("field names: "+conf.get("elasticsearch.field.names"));
             this.fieldNames = conf.get("elasticsearch.field.names").split(",");
             this.idField    = Integer.parseInt(conf.get("elasticsearch.id.field"));
+            LOG.info("key field name: "+fieldNames[idField]);
             this.objType    = conf.get("elasticsearch.object.type");
             System.setProperty("es.config",conf.get("elasticsearch.config"));
             System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins.dir"));
@@ -102,8 +104,8 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 // Document has no inherent id
                 currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
             } else {
-                // Use one of the docuement's fields as the id
-                String record_id = fields.get(fieldNames[idField]).toString();
+                Text mapKey = new Text(fieldNames[idField]);
+                String record_id = fields.get(mapKey).toString();
                 currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));
             }
             processBulkIfNeeded();

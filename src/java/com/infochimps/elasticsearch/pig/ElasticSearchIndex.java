@@ -36,8 +36,6 @@ import org.apache.pig.impl.logicalLayer.FrontendException;
 import org.apache.pig.impl.util.Utils;
 import org.apache.pig.impl.util.UDFContext;
 
-
-import com.google.common.collect.Lists;
 import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
 
 /**
@@ -120,18 +118,18 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
         // Only set if we haven't already
         if (conf.get("elasticsearch.index.name") == null) {
             try {
-                conf.set("elasticsearch.index.name", es_store[0]);
-                conf.set("elasticsearch.object.type", es_store[1]);
+                job.getConfiguration().set("elasticsearch.index.name", es_store[0]);
+                job.getConfiguration().set("elasticsearch.object.type", es_store[1]);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw new RuntimeException("You must specify both an index and an object type.");
             }
-            conf.set("elasticsearch.bulk.size", bulkSize);
-            conf.set("elasticsearch.id.field", idField);
-            conf.set("elasticsearch.config", esConfig);
-            conf.set("elasticsearch.plugins.dir", esPlugins);
+            job.getConfiguration().set("elasticsearch.bulk.size", bulkSize);
+            job.getConfiguration().set("elasticsearch.id.field", idField);
+            job.getConfiguration().set("elasticsearch.config", esConfig);
+            job.getConfiguration().set("elasticsearch.plugins.dir", esPlugins);
             UDFContext context  = UDFContext.getUDFContext();
             Properties property = context.getUDFProperties(ResourceSchema.class);
-            conf.set("elasticsearch.field.names", property.getProperty("elasticsearch.pig.field.names"));
+            job.getConfiguration().set("elasticsearch.field.names", property.getProperty("elasticsearch.pig.field.names"));
         }
     }
 
