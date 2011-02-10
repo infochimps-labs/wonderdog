@@ -104,9 +104,13 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 // Document has no inherent id
                 currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
             } else {
-                Text mapKey = new Text(fieldNames[idField]);
-                String record_id = fields.get(mapKey).toString();
-                currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));
+                try {
+                    Text mapKey = new Text(fieldNames[idField]);
+                    String record_id = fields.get(mapKey).toString();
+                    currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));
+                } catch (Exception e) {
+                    LOG.info("Increment bad record counter");
+                }
             }
             processBulkIfNeeded();
         }
