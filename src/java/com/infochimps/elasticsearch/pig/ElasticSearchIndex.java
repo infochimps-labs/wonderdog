@@ -159,7 +159,7 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
                 try {
                     record.put(new Text(fieldNames[i]), new Text(t.get(i).toString()));
                 } catch (NullPointerException e) {
-                    LOG.info("Increment null field counter.");
+                    //LOG.info("Increment null field counter.");
                 }
             }
         }

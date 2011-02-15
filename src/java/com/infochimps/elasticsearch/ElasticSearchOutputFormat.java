@@ -79,11 +79,13 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
            Need to index any remaining content.
          */
         public void close(TaskAttemptContext context) throws IOException {
-            try {
-                BulkResponse response = currentRequest.execute().actionGet();
-            } catch (Exception e) {
-                LOG.warn("Bulk request failed: " + e.getMessage());
-                throw new RuntimeException(e);
+            if (currentRequest.numberOfActions() > 0) {            
+                try {
+                    BulkResponse response = currentRequest.execute().actionGet();
+                } catch (Exception e) {
+                    LOG.warn("Bulk request failed: " + e.getMessage());
+                    throw new RuntimeException(e);
+                }
             }
             LOG.info("Closing record writer");
             client.close();
