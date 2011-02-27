@@ -57,6 +57,13 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private int idField;
         private String objType;
         private String[] fieldNames;
+        
+        // Used for bookkeeping purposes
+        private AtomicLong totalBulkTime  = new AtomicLong();
+        private AtomicLong totalBulkItems = new AtomicLong();
+        private Random     randgen        = new Random();        
+        private long       runStartTime   = System.currentTimeMillis();
+        
         private volatile BulkRequestBuilder currentRequest;
         
         public ElasticSearchRecordWriter(TaskAttemptContext context) {
@@ -92,6 +99,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             if (node != null) {
                 node.close();
             }
+            LOG.info("Record writer closed.");
         }
 
         public void write(NullWritable key, MapWritable fields) throws IOException {
@@ -118,9 +126,15 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         }
 
         private void processBulkIfNeeded() {
+            totalBulkItems.incrementAndGet();
             if (currentRequest.numberOfActions() >= bulkSize) {
                 try {
+                    long startTime        = System.currentTimeMillis();
                     BulkResponse response = currentRequest.execute().actionGet();
+                    totalBulkTime.addAndGet(System.currentTimeMillis() - startTime);
+                    if (randgen.nextDouble() < 0.1) {
+                        LOG.info("Indexed [" + totalBulkItems.get() + "] in [" + (totalBulkTime.get()/1000) + "s] of indexing"+"[" + ((System.currentTimeMillis() - runStartTime)/1000) + "s] of wall clock"+" for ["+ (float)(1000.0*totalBulkItems.get())/(System.currentTimeMillis() - runStartTime) + "rec/s]");
+                    }
                 } catch (Exception e) {
                     LOG.warn("Bulk request failed: " + e.getMessage());
                     throw new RuntimeException(e);
