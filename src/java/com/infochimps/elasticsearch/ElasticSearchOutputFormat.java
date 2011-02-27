@@ -96,9 +96,10 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             }
             LOG.info("Closing record writer");
             client.close();
-            if (node != null) {
-                node.close();
-            }
+            // LOG.info("Client is closed")
+            // if (node != null) {
+            //     node.close();
+            // }
             LOG.info("Record writer closed.");
         }
 
