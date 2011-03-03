@@ -70,10 +70,8 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             Configuration conf = context.getConfiguration();
             this.indexName  = conf.get("elasticsearch.index.name");
             this.bulkSize   = Integer.parseInt(conf.get("elasticsearch.bulk.size"));
-            LOG.info("field names: "+conf.get("elasticsearch.field.names"));
             this.fieldNames = conf.get("elasticsearch.field.names").split(",");
             this.idField    = Integer.parseInt(conf.get("elasticsearch.id.field"));
-            LOG.info("key field name: "+fieldNames[idField]);
             this.objType    = conf.get("elasticsearch.object.type");
             System.setProperty("es.config",conf.get("elasticsearch.config"));
             System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins.dir"));
