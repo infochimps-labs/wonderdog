@@ -39,3 +39,19 @@ http true:
 915	/mnt/elasticsearch/data/hoolock/nodes/0/indices/tweet-201009/1/index
 1908	/mnt/elasticsearch/data/hoolock/nodes/0/indices/tweet-201010/13/index
 2026	/mnt/elasticsearch/data/hoolock/nodes/0/indices/tweet-201011/7/index
+
+
+    "tweet-201010" : 		"num_docs" : 40272985,
+    "tweet-201011" : 		"num_docs" : 39012255,
+    "tweet-2009q4" : 		"num_docs" : 577762139,
+    "tweet-201006" : 		"num_docs" : 288445236,
+    "tweet-201008" : 		"num_docs" : 30904989,
+    "tweet-201005" : 		"num_docs" : 242058418,
+    "tweet-201007" : 		"num_docs" : 311059766,
+    "tweet-2009q3pre" :		"num_docs" : 359075858,
+    "tweet-201004" : 		"num_docs" : 190501768,
+    "tweet-201009" : 		"num_docs" : 19166922,
+    "tweet-2010q1" : 		"num_docs" : 368031331,
+
+
+

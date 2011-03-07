@@ -4,7 +4,7 @@ require 'rubygems'
 require 'rubberband'
 require 'fileutils'
 require 'configliere'
-Settings.use :commandline
+Settings.use :commandline, :env_var
 
 #
 # Estrus -- an alluringly primitive Elasticsearch stress-testing tool
@@ -27,14 +27,15 @@ Settings.define :words_file,   :default => "/usr/share/dict/words", :description
 Settings.define :offset_start, :default => 50_000,                  :description => "Where to start reading words", :type => Integer
 Settings.define :offset_scale, :default => 100,                     :description => "How far in the file to range", :type => Integer
 Settings.define :queries,      :default => 10,                      :description => "Number of queries to run",     :type => Integer
-Settings.define :es_indexes,   :default => 'tweet-2009q3pre,tweet-2009q4,tweet-201004,tweet-201005,tweet-201006',          :description => "Elasticsearch index to query against", :type => Array
+Settings.define :es_indexes,   :default => 'tweet-2009q3pre,tweet-2009q4,tweet-2010q1,tweet-201004,tweet-201005,tweet-201005,tweet-201006,tweet-201007,tweet-201008,tweet-201009,tweet-201010,tweet-201011',          :description => "Elasticsearch index to query against", :type => Array
 Settings.define :output_dir,   :default => nil,                     :description => "If given, the output is directed to a file named :output_dir/{date}/es-{datetime}-{comment}-{hostname}.tsv"
 Settings.define :comment,      :default => nil,                     :description => "If given, it is included in the filename"
+Settings.define :host,         :default => `hostname`.chomp,        :description => "Host of ES query server"
+Settings.define :port,         :default => '9200',                  :description => "Port for ES query server"
 Settings.resolve!
 
-HOSTNAME = ENV['HOSTNAME'] || `hostname`.chomp
-NODENAME = File.read('/etc/node_name').chomp rescue HOSTNAME
-CLIENTS = Settings.es_indexes.inject([]){|clients, index| clients << [index, ElasticSearch.new("#{HOSTNAME}:9200", :index => index, :type => "tweet")] ; clients }
+NODENAME = File.read('/etc/node_name').chomp rescue `hostname`.chomp
+CLIENTS = Settings.es_indexes.inject([]){|clients, index| clients << [index, ElasticSearch.new("#{Settings.host}:#{Settings.port}", :index => index, :type => "tweet")] ; clients }
 
 class StressTester
   attr_accessor :started_at
