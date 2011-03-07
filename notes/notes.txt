@@ -1,0 +1,91 @@
+At Infochimps we recently indexed over 2.5 billion documents for a total of 4TB total indexed size. This would not have been possible without ElasticSearch and the Hadoop bulk loader we wrote, <a href="http://github.com/infochimps/wonderdog">wonderdog</a>. I'll go into the technical details in a later post but for now here's how you can get started with ElasticSearch and Hadoop:
+
+<h2>Getting Started with ElasticSearch</h2>
+
+The first thing is to actually install elasticsearch:
+
+<pre class="brush: bash">
+$: wget http://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.14.2.zip
+$: sudo mv elasticsearch-0.14.2 /usr/local/share/
+$: sudo ln -s /usr/local/share/elasticsearch-0.14.2 /usr/local/share/elasticsearch
+</pre>
+
+Next you'll want to make sure there is an 'elasticsearch' user and that there are suitable data, work, and log directories that 'elasticsearch' owns:
+
+<pre class="brush: bash">
+$: sudo useradd elasticsearch
+$: sudo mkdir -p /var/log/elasticsearch /var/run/elasticsearch/{data,work}
+$: sudo chown -R elasticsearch /var/{log,run}/elasticsearch
+</pre>
+
+Then get wonderdog (you'll have to git clone it for now) and go ahead and copy the example configuration in wonderdog/config:
+
+<pre class="brush: bash">
+$: sudo mkdir -p /etc/elasticsearch
+$: sudo cp config/elasticsearch-example.yml /etc/elasticsearch/elasticsearch.yml
+$: sudo cp config/logging.yml /etc/elasticsearch/
+$: sudo cp config/elasticsearch.in.sh /etc/elasticsearch/
+</pre>
+
+Make changes to 'elasticsearch.yml' such that it points to the correct data, work, and log directories. Also, you'll want to change the number of 'recovery_after_nodes' and 'expected_nodes' in elasticsearch.yml to however many nodes (machines) you actually expect to have in your cluster. You'll probably also want to do a quick once-over of elasticsearch.in.sh and make sure the jvm settings, etc are sane for your particular setup. Finally, to startup do:
+
+<pre class="brush: bash">
+sudo -u elasticsearch /usr/local/share/elasticsearch/bin/elasticsearch -Des.config=/etc/elasticsearch/elasticsearch.yml
+</pre>
+
+You should now have a happily running (reasonably configured) elasticsearch data node.
+
+<h2>Index Some Data</h2>
+
+Prerequisites:
+
+<ul>
+<li>You have a working hadoop cluster</li>
+<li>Elasticsearch data nodes are installed and running on all your machines and they have discovered each other. See the elasticsearch documentation for details on making that actually work.</li>
+<li>You've installed the following rubygems: 'configliere' and 'json'</li>
+</ul>
+
+<h3>Get Data</h3>
+
+As an example lets index this UFO sightings data set from Infochimps <a href="http://infochimps.com/datasets/d60000-documented-ufo-sightings-with-text-descriptions-and-metad">here</a>. (You should be familiar with this one by now...) It's mostly raw text and so it's a very reasonable thing to index. Once it's downloaded go ahead and throw it on the HDFS:
+<pre class="brush: bash">
+$: hadoop fs -mkdir /data/domestic/ufo
+$: hadoop fs -put chimps_16154-2010-10-20_14-33-35/ufo_awesome.tsv /data/domestic/ufo/
+</pre>
+
+<h3>Index Data</h3>
+
+This is the easy part:
+
+<pre class="brush: bash">
+$: bin/wonderdog --rm --field_names=sighted_at,reported_at,location,shape,duration,description --id_field=-1 --index_name=ufo_sightings --object_type=ufo_sighting --es_config=/etc/elasticsearch/elasticsearch.yml /data/domestic/aliens/ufo_awesome.tsv /tmp/elasticsearch/aliens/out
+</pre>
+
+Flags:
+
+'--rm' - Remove output on the hdfs if it exists
+'--field_names' - A comma separated list of the field names in the tsv, in order
+'--id_field' - The field to use as the record id, -1 if the record has no inherent id
+'--index_name' - The index name to bulk load into
+'--object_type' - The type of objects we're indexing
+'--es_config' - Points to the elasticsearch config*
+
+*The elasticsearch config that the hadoop machines need must be on all the hadoop machines and have a 'hosts' entry listing the ips of all the elasticsearch data nodes (see wonderdog/config/elasticsearch-example.yml). This means we can run the hadoop job on a different cluster than the elasticsearch data nodes are running on.
+
+The other two arguments are the input and output paths. The output path in this case only gets written to if one or more index requests fail. This way you can re-run the job on only those records that didn't make it the first time.
+
+The indexing should go pretty quickly. 
+Next is to refresh the index so we can actually query our newly indexed data. There's a tool in wonderdog's bin directory for that:
+<pre class="brush: bash">
+$: bin/estool --host=`hostname -i` refresh_index
+</pre>
+
+
+<h3>Query Data</h3>
+
+Once again, use estool
+<pre class="brush: bash">
+$: bin/estool --host=`hostname -i` --index_name=ufo_sightings --query_string="ufo" query
+</pre>
+
+Hurray.
