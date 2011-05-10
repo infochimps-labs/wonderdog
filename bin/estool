@@ -9,6 +9,7 @@ Settings.define :host,  :required => true, :description => "Elastic search clust
 Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
 Settings.define :index_name,               :description => "Which index to address?"
 Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
+Settings.define :num_segments, :default => 3, :description => "When optimizing index, how many segments to use"
 Settings.define :object_type,              :description => "When 'putting' the mapping, which object type to update"
 Settings.define :object_def_file,          :description => "When 'putting' the mapping, full path to json config file describing object and its fields"
 Settings.define :query_string,             :description => "Query string to use when querying the index"
@@ -62,7 +63,7 @@ end
 # Does a full compaction, merging smaller index files, for the given index.
 #
 task :optimize_index do
-  sh "curl -s -XPOST \"http://%s:%s/%s/_optimize?max_num_segments=1\"" % [Settings.host, Settings.port, Settings.index_name]
+  sh "curl -s -XPOST \"http://%s:%s/%s/_optimize?max_num_segments=%s\"" % [Settings.host, Settings.port, Settings.index_name, Settings.num_segments]
 end
 
 #
