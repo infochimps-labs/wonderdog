@@ -12,10 +12,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.apache.hadoop.conf.Configurable;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.MapWritable;
-import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -55,8 +52,10 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private String indexName;
         private int bulkSize;
         private int idField;
+        private String idFieldName;
         private String objType;
         private String[] fieldNames;
+        private boolean isJSON;
         
         // Used for bookkeeping purposes
         private AtomicLong totalBulkTime  = new AtomicLong();
@@ -70,8 +69,17 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             Configuration conf = context.getConfiguration();
             this.indexName  = conf.get("elasticsearch.index.name");
             this.bulkSize   = Integer.parseInt(conf.get("elasticsearch.bulk.size"));
-            this.fieldNames = conf.get("elasticsearch.field.names").split(",");
-            this.idField    = Integer.parseInt(conf.get("elasticsearch.id.field"));
+            this.isJSON     = conf.getBoolean("elasticsearch.is_json", false);
+            if (isJSON) {
+                LOG.info("Documents will be processed as JSON documents");
+                this.idFieldName = conf.get("elasticsearch.id.field.name");
+                if (idFieldName == null) {
+                    this.idField = -1;
+                }
+            } else {
+                this.fieldNames = conf.get("elasticsearch.field.names").split(",");
+                this.idField    = Integer.parseInt(conf.get("elasticsearch.id.field"));                
+            }
             this.objType    = conf.get("elasticsearch.object.type");
             System.setProperty("es.config",conf.get("elasticsearch.config"));
             System.setProperty("es.path.plugins",conf.get("elasticsearch.plugins.dir"));
@@ -114,14 +122,48 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
             } else {
                 try {
-                    Text mapKey = new Text(fieldNames[idField]);
+                    Text mapKey = null;
+                    if (isJSON) {                        
+                        mapKey = new Text(idFieldName);
+                    } else {
+                        mapKey = new Text(fieldNames[idField]);
+                    }
+                    LOG.info("map key ["+mapKey+"]");
                     String record_id = fields.get(mapKey).toString();
-                    currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));
+                    LOG.info("record id ["+record_id+"]");
+                    currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));                    
                 } catch (Exception e) {
                     LOG.info("Increment bad record counter");
                 }
             }
             processBulkIfNeeded();
+        }
+
+        private void buildContent(XContentBuilder builder, String key, Writable value) throws IOException {
+            if (value instanceof Text) {
+                builder.field(key, ((Text)value).toString());
+            } else if (value instanceof LongWritable) {
+                builder.field(key, ((LongWritable)value).get());
+            } else if (value instanceof IntWritable) {
+                builder.field(key, ((IntWritable)value).get());
+            } else if (value instanceof DoubleWritable) {
+                builder.field(key, ((DoubleWritable)value).get());
+            } else if (value instanceof FloatWritable) {
+                builder.field(key, ((FloatWritable)value).get());
+            } else if (value instanceof MapWritable) {
+                builder.startObject();
+                for (Map.Entry<Writable,Writable> entry : ((MapWritable)value).entrySet()) {
+                    buildContent(builder, entry.getKey().toString(), entry.getValue());
+                }
+                builder.endObject();
+            } else if (value instanceof ArrayWritable) {
+                builder.startArray();
+                Writable[] arrayOfThings = ((ArrayWritable)value).get();
+                for (int i = 0; i < arrayOfThings.length; i++) {
+                    Writable thing = arrayOfThings[i];
+                }
+                builder.endArray();
+            }
         }
 
         private void processBulkIfNeeded() {

@@ -123,6 +123,7 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw new RuntimeException("You must specify both an index and an object type.");
             }
+            job.getConfiguration().setBoolean("elasticsearch.is_json", false);
             job.getConfiguration().set("elasticsearch.bulk.size", bulkSize);
             job.getConfiguration().set("elasticsearch.id.field", idField);
             job.getConfiguration().set("elasticsearch.config", esConfig);

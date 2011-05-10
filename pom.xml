@@ -31,6 +31,12 @@
       <groupId>org.apache.pig</groupId>
       <artifactId>pig</artifactId>
       <version>0.8.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <version>1.5.2</version>
     </dependency>    
   </dependencies>
 
@@ -57,6 +63,18 @@
       <id>sonatype-releases</id>
       <url>http://oss.sonatype.org/content/repositories/releases</url>
     </repository>
+
+    <repository>
+      <id>codehaus</id>
+      <url>http://repository.codehaus.org/org/codehaus</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+
   </repositories>
   
 </project>
