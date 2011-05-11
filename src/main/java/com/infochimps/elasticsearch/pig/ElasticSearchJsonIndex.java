@@ -72,16 +72,34 @@ public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterf
     protected String esConfig;
     protected String esPlugins;
 
+    // For hadoop configuration
+    private static final String ES_INDEX_NAME = "elasticsearch.index.name";
+    private static final String ES_BULK_SIZE = "elasticsearch.bulk.size";
+    private static final String ES_IS_JSON = "elasticsearch.is_json";
+    private static final String ES_ID_FIELD_NAME = "elasticsearch.id.field.name";
+    private static final String ES_FIELD_NAMES = "elasticsearch.field.names";
+    private static final String ES_ID_FIELD = "elasticsearch.id.field";
+    private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
+    private static final String ES_CONFIG = "elasticsearch.config";
+    private static final String ES_PLUGINS = "elasticsearch.plugins.dir";
+
+    // Other string constants
+    private static final String SLASH = "/";
+    private static final String NO_ID_FIELD = "-1";
+    private static final String DEFAULT_BULK = "1000";
+    private static final String DEFAULT_ES_CONFIG = "/etc/elasticsearch/elasticsearch.yml";
+    private static final String DEFAULT_ES_PLUGINS = "/usr/local/share/elasticsearch/plugins";
+    
     public ElasticSearchJsonIndex() {
-        this(null, "1000");
+        this(NO_ID_FIELD, DEFAULT_BULK);
     }
 
     public ElasticSearchJsonIndex(String idFieldName, String bulkSize) {
-        this(idFieldName, bulkSize, "/etc/elasticsearch/elasticsearch.yml");
+        this(idFieldName, bulkSize, DEFAULT_ES_CONFIG);
     }
 
     public ElasticSearchJsonIndex(String idFieldName, String bulkSize, String esConfig) {
-        this(idFieldName, bulkSize, esConfig, "/usr/local/share/elasticsearch/plugins");
+        this(idFieldName, bulkSize, esConfig, DEFAULT_ES_PLUGINS);
     }
 
     public ElasticSearchJsonIndex(String idFieldName, String bulkSize, String esConfig, String esPlugins) {
@@ -102,24 +120,24 @@ public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterf
      */
     @Override
     public void setStoreLocation(String location, Job job) throws IOException {
-        String[] es_store  = location.substring(5).split("/");
+        String[] es_store  = location.substring(5).split(SLASH);
         if (es_store.length != 2) {
             throw new RuntimeException("Please specify a valid elasticsearch index, eg. es://myindex/myobj");
         }
         Configuration conf = job.getConfiguration();
         // Only set if we haven't already
-        if (conf.get("elasticsearch.index.name") == null) {
+        if (conf.get(ES_INDEX_NAME) == null) {
             try {
-                job.getConfiguration().set("elasticsearch.index.name", es_store[0]);
-                job.getConfiguration().set("elasticsearch.object.type", es_store[1]);
+                job.getConfiguration().set(ES_INDEX_NAME, es_store[0]);
+                job.getConfiguration().set(ES_OBJECT_TYPE, es_store[1]);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw new RuntimeException("You must specify both an index and an object type.");
             }
-            job.getConfiguration().setBoolean("elasticsearch.is_json", true);
-            job.getConfiguration().set("elasticsearch.bulk.size", bulkSize);
-            job.getConfiguration().set("elasticsearch.id.field.name", idFieldName);
-            job.getConfiguration().set("elasticsearch.config", esConfig);
-            job.getConfiguration().set("elasticsearch.plugins.dir", esPlugins);
+            job.getConfiguration().setBoolean(ES_IS_JSON, true);
+            job.getConfiguration().set(ES_BULK_SIZE, bulkSize);
+            job.getConfiguration().set(ES_ID_FIELD_NAME, idFieldName);
+            job.getConfiguration().set(ES_CONFIG, esConfig);
+            job.getConfiguration().set(ES_PLUGINS, esPlugins);
         }
     }
 
@@ -161,6 +179,10 @@ public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterf
         }
     }
 
+    /**
+       Recursively converts an arbitrary object into the appropriate writable. Please enlighten me if there is an existing
+       method for doing this.      
+     */
     private Writable toWritable(Object thing) {
         if (thing instanceof String) {
             return new Text((String)thing);
@@ -179,12 +201,14 @@ public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterf
             }
             return result;
         } else if (thing instanceof List) {
-            Object first = ((List)thing).get(0);
-            Writable[] listOfThings = new Writable[((List)thing).size()];
-            for (int i = 0; i < listOfThings.length; i++) {
-                listOfThings[i] = toWritable(((List)thing).get(i));
+            if (((List)thing).size() > 0) {
+                Object first = ((List)thing).get(0);
+                Writable[] listOfThings = new Writable[((List)thing).size()];
+                for (int i = 0; i < listOfThings.length; i++) {
+                    listOfThings[i] = toWritable(((List)thing).get(i));
+                }
+                return new ArrayWritable(toWritable(first).getClass(), listOfThings);
             }
-            return new ArrayWritable(toWritable(first).getClass(), listOfThings);
         }
         return NullWritable.get();
     }
