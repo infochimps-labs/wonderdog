@@ -1,5 +1,6 @@
 package com.infochimps.elasticsearch;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
@@ -7,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.Random;
+import java.net.URI;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -22,6 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.OutputCommitter;
+import org.apache.hadoop.filecache.DistributedCache;
 
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -64,6 +67,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private long       runStartTime   = System.currentTimeMillis();
 
         // For hadoop configuration
+        private static final String ES_CONFIG_NAME = "elasticsearch.yml";
         private static final String ES_INDEX_NAME = "elasticsearch.index.name";
         private static final String ES_BULK_SIZE = "elasticsearch.bulk.size";
         private static final String ES_IS_JSON = "elasticsearch.is_json";
@@ -120,8 +124,30 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 this.idField    = Integer.parseInt(conf.get(ES_ID_FIELD));                
             }
             this.objType    = conf.get(ES_OBJECT_TYPE);
-            System.setProperty("es.config",conf.get(ES_CONFIG));
+            
+            //
+            // Fetches elasticsearch.yml from the distributed cache
+            //
+            try {
+                URI[] cacheFiles = DistributedCache.getCacheFiles(conf);
+                for (URI cacheFile : cacheFiles) {
+                    if ((new File(cacheFile)).getName().equals(ES_CONFIG_NAME)) {
+                        LOG.info("Found ElasticSearch configuration ["+cacheFile.getPath()+"] in the distributed cache");
+                        System.setProperty("es.config", cacheFile.getPath());
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            //
+            // FIXME! This needs to use the distributed cache
+            //
             System.setProperty("es.path.plugins",conf.get(ES_PLUGINS));
+            //
+            //
+            //
             start_embedded_client();
             initialize_index(indexName);
             currentRequest = client.prepareBulk();

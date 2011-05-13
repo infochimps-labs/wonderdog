@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Properties;
+import java.net.URI;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -21,6 +22,8 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.RecordWriter;
+import org.apache.hadoop.filecache.DistributedCache;
+
 import org.apache.pig.StoreFunc;
 import org.apache.pig.ResourceSchema;
 import org.apache.pig.ResourceSchema.ResourceFieldSchema;
@@ -84,6 +87,7 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
     // Other string constants
     private static final String SLASH = "/";
     private static final String COMMA = ",";
+    private static final String LOCAL_SCHEME = "file://";
     private static final String NO_ID_FIELD = "-1";
     private static final String DEFAULT_BULK = "1000";
     private static final String DEFAULT_ES_CONFIG = "/etc/elasticsearch/elasticsearch.yml";
@@ -146,8 +150,22 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
             job.getConfiguration().setBoolean(ES_IS_JSON, false);
             job.getConfiguration().set(ES_BULK_SIZE, bulkSize);
             job.getConfiguration().set(ES_ID_FIELD, idField);
-            job.getConfiguration().set(ES_CONFIG, esConfig);
+            
+            //
+            // FIXME! This needs to use the distributed cache
+            //
             job.getConfiguration().set(ES_PLUGINS, esPlugins);
+            //
+            //
+            //
+
+            // Adds the elasticsearch.yml file (esConfig) to the distributed cache
+            try {
+                DistributedCache.addCacheFile(new URI(LOCAL_SCHEME+esConfig), job.getConfiguration());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
             UDFContext context  = UDFContext.getUDFContext();
             Properties property = context.getUDFProperties(ResourceSchema.class);
             job.getConfiguration().set(ES_FIELD_NAMES, property.getProperty(PIG_ES_FIELD_NAMES));
