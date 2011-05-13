@@ -68,6 +68,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
 
         // For hadoop configuration
         private static final String ES_CONFIG_NAME = "elasticsearch.yml";
+        private static final String ES_PLUGINS_NAME = "plugins";
         private static final String ES_INDEX_NAME = "elasticsearch.index.name";
         private static final String ES_BULK_SIZE = "elasticsearch.bulk.size";
         private static final String ES_IS_JSON = "elasticsearch.is_json";
@@ -75,8 +76,8 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private static final String ES_FIELD_NAMES = "elasticsearch.field.names";
         private static final String ES_ID_FIELD = "elasticsearch.id.field";
         private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
-        private static final String ES_CONFIG = "elasticsearch.config";
-        private static final String ES_PLUGINS = "elasticsearch.plugins.dir";
+        private static final String ES_CONFIG = "es.config";
+        private static final String ES_PLUGINS = "es.path.plugins";
 
         // Other string constants
         private static final String COMMA = ",";
@@ -126,14 +127,24 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             this.objType    = conf.get(ES_OBJECT_TYPE);
             
             //
-            // Fetches elasticsearch.yml from the distributed cache
+            // Fetches elasticsearch.yml and the plugins directory from the distributed cache
             //
             try {
                 URI[] cacheFiles = DistributedCache.getCacheFiles(conf);
                 for (URI cacheFile : cacheFiles) {
                     if ((new File(cacheFile)).getName().equals(ES_CONFIG_NAME)) {
                         LOG.info("Found ElasticSearch configuration ["+cacheFile.getPath()+"] in the distributed cache");
-                        System.setProperty("es.config", cacheFile.getPath());
+                        System.setProperty(ES_CONFIG, cacheFile.getPath());
+                        break;
+                    }
+                }
+
+                URI[] cacheArchives = DistributedCache.getCacheArchives(conf);
+
+                for (URI cacheArchive : cacheArchives) {
+                    if ((new File(cacheArchive)).getName().equals(ES_PLUGINS_NAME)) {
+                        LOG.info("Found ElasticSearch configuration ["+cacheArchive.getPath()+"] in the distributed cache");
+                        System.setProperty(ES_PLUGINS, cacheArchive.getPath());
                         break;
                     }
                 }
@@ -141,13 +152,6 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 throw new RuntimeException(e);
             }
 
-            //
-            // FIXME! This needs to use the distributed cache
-            //
-            System.setProperty("es.path.plugins",conf.get(ES_PLUGINS));
-            //
-            //
-            //
             start_embedded_client();
             initialize_index(indexName);
             currentRequest = client.prepareBulk();

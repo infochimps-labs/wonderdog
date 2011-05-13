@@ -59,8 +59,8 @@ import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
                  then the record is assumed to have no id.
    bulkSize    = Number of records for ElasticSearchOutputFormat to batch up before sending
                  a bulk index request to Elastic Search. Default: 1000.
-   esConfig    = Full path to elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
-   esPlugins   = Full path to elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
+   esConfig    = Full path to local elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
+   esPlugins   = Full path to local elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
    
  */
 public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterface {
@@ -82,8 +82,6 @@ public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterf
     private static final String ES_FIELD_NAMES = "elasticsearch.field.names";
     private static final String ES_ID_FIELD = "elasticsearch.id.field";
     private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
-    private static final String ES_CONFIG = "elasticsearch.config";
-    private static final String ES_PLUGINS = "elasticsearch.plugins.dir";
 
     // Other string constants
     private static final String SLASH = "/";
@@ -140,17 +138,10 @@ public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterf
             job.getConfiguration().set(ES_BULK_SIZE, bulkSize);
             job.getConfiguration().set(ES_ID_FIELD_NAME, idFieldName);
 
-            //
-            // FIXME! This needs to use the distributed cache
-            //
-            job.getConfiguration().set(ES_PLUGINS, esPlugins);
-            //
-            //
-            //
-
             // Adds the elasticsearch.yml file (esConfig) to the distributed cache
             try {
                 DistributedCache.addCacheFile(new URI(LOCAL_SCHEME+esConfig), job.getConfiguration());
+                DistributedCache.addCacheArchive(new URI(LOCAL_SCHEME+esPlugins), job.getConfiguration());                
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

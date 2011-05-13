@@ -58,8 +58,8 @@ import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
                then the record is assumed to have no id.
    bulkSize  = Number of records for ElasticSearchOutputFormat to batch up before sending
                a bulk index request to Elastic Search. Default: 1000.
-   esConfig  = Full path to elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
-   esPlugins = Full path to elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
+   esConfig  = Full path to local elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
+   esPlugins = Full path to local elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
    
  */
 public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface {
@@ -80,8 +80,6 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
     private static final String ES_FIELD_NAMES = "elasticsearch.field.names";
     private static final String ES_ID_FIELD = "elasticsearch.id.field";
     private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
-    private static final String ES_CONFIG = "elasticsearch.config";
-    private static final String ES_PLUGINS = "elasticsearch.plugins.dir";
     private static final String PIG_ES_FIELD_NAMES = "elasticsearch.pig.field.names";
 
     // Other string constants
@@ -151,17 +149,10 @@ public class ElasticSearchIndex extends StoreFunc implements StoreFuncInterface 
             job.getConfiguration().set(ES_BULK_SIZE, bulkSize);
             job.getConfiguration().set(ES_ID_FIELD, idField);
             
-            //
-            // FIXME! This needs to use the distributed cache
-            //
-            job.getConfiguration().set(ES_PLUGINS, esPlugins);
-            //
-            //
-            //
-
-            // Adds the elasticsearch.yml file (esConfig) to the distributed cache
+            // Adds the elasticsearch.yml file (esConfig) and the plugins directory (esPlugins) to the distributed cache
             try {
                 DistributedCache.addCacheFile(new URI(LOCAL_SCHEME+esConfig), job.getConfiguration());
+                DistributedCache.addCacheArchive(new URI(LOCAL_SCHEME+esPlugins), job.getConfiguration());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

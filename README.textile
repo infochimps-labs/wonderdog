@@ -6,40 +6,19 @@ h2. Requirements
 
 h3. Hadoop cluster setup:
 
-Wonderdog makes use of hadoop to do its bulk loading so you'll need to have a fully functional hadoop cluster lying around. Additionally, each machine in the hadoop cluster will need to have "elasticsearch":http://www.elasticsearch.com/download/ installed in the same location on each machine. Defaults for most everything will want elasticsearch itself to live in @/usr/local/share/elasticsearch@ and the configuration @elasticsearch/config/*@ to actually live in @/etc/elasticsearch@. For simplicity you might set @ES_HOME@ and @ES_CONF@ to point to the right places. As an example setup process (with elasticsearch 0.14.2):
-
-<pre><code>
-$: wget http://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.14.2.zip
-$: unzip elasticsearch-0.14.2.zip
-$: sudo mv elasticsearch-0.14.2 /usr/local/share/
-$: sudo ln -s /usr/local/share/elasticsearch-0.14.2 /usr/local/share/elasticsearch
-$: sudo cp config/* /etc/elasticsearch/
-</code></pre>
-
-Then, make all your changes to the configuration files in @/etc/elasticsearch@. See @config/*@ for a set of example configuration files.
+Wonderdog makes use of hadoop to do its bulk loading so you'll need to have a fully functional hadoop cluster lying around. However, since wonderdog uses hadoop's distributed cache to distribute configuration and other files, no additional configuration of the hadoop cluster is necessary. 
 
 h3. ElasticSearch cluster setup:
 
-Follow the same procedure as that for the hadoop cluster setup. Once elasticsearch is installed on all the machines you'll want to start the daemons. It's generally a good idea to have created an elasticsearch user and run the daemons as this user. Then:
-
-<pre><code>
-sudo -u elasticsearch $ES_HOME/bin/elasticsearch -Des.config=/etc/elasticsearch/elasticsearch.yml
-</code></pre>
-
-should get you started. Do this for every machine in you elasticsearch cluster. Finally, both
-
-@java/bin/estool --host=<elasticsearch_host> status@ and
-@java/bin/estool --host=<elasticsearch_host> health@
-
-should indicate a happy elasticsearch cluster.
-
-In addition to the setup for each cluster you'll need to ensure they can talk to each other. This is addressed in the documentation for elasticsearch itself.
+Well, you'll have to have an elasticsearch cluster setup somewhere. There is far better documentation for doing that elsewhere, namely the elasticsearch "guide":http://www.elasticsearch.org/guide/
 
 h2. Usage
 
-Once you've got a working set up you should be ready to launch your bulkload process. Right now the bulkload only accepts tsv though json and avro support should be possible with straightforward changes (contributions?).
+h3. Native Hadoop TSV Loader
 
-The best way to explain is with an example. Say you've got a tsv file of user records (name,login,email,description) and you want to index all the fields. Assuming you're going to write to an index called @users@ with objects of type @user@ (elasticsearch will create this object automatically the first time you upload one). The workflow is as follows:
+**Note**: the tsv loader is deprecated. Instead, use the ElasticSearchOutputFormat coupled with either Apache Pig storefunc (ElasticSearchIndex or ElasticSearchJsonIndex).
+
+Once you've got a working set up you should be ready to launch your bulkload process. The best way to explain is with an example. Say you've got a tsv file of user records (name,login,email,description) and you want to index all the fields. Assuming you're going to write to an index called @users@ with objects of type @user@ (elasticsearch will create this object automatically the first time you upload one). The workflow is as follows:
 
 * Create the @users@ index:
 
@@ -89,7 +68,7 @@ bin/estool --host=<elasticsearch_host> --index_name=users optimize_index
 
 This will also take a while to finish.
 
-h2. Wonderdog Command-line options
+h4. TSV loader command-line options
 
 * @index_name@ - Index to write data to. It does not have to exist ahead of time
 * @object_type@ - Type of object to index. The mapping for this object does not have to exist ahead of time. Fields will be updated dynamically by elasticsearch.
@@ -101,6 +80,76 @@ h2. Wonderdog Command-line options
 * @rm@ - Remove existing output? (true or leave blank)
 * @hadoop_home@ - Path to hadoop installation, read from the HADOOP_HOME environment variable if it's set
 * @min_split_size@ - Min split size for maps
+
+h3. Using the ElasticSearchIndex and ElasticSearchJsonIndex Pig Store Functions
+
+The most up-to-date (and simplest) way to store data into elasticsearch with hadoop is to use the Pig Store Functions. Here you've got two options.
+
+h4. ElasticSearchIndex
+
+This allows you to store tabular data (eg. tsv, csv) into elasticsearch.
+
+<pre><code>
+register target/wonderdog.jar
+register /usr/local/share/elasticsearch/lib/elasticsearch-0.14.2.jar
+register /usr/local/share/elasticsearch/lib/jline-0.9.94.jar
+register /usr/local/share/elasticsearch/lib/jna-3.2.7.jar
+register /usr/local/share/elasticsearch/lib/log4j-1.2.15.jar
+register /usr/local/share/elasticsearch/lib/lucene-analyzers-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-core-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-fast-vector-highlighter-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-highlighter-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-memory-3.0.3.jar
+register /usr/local/share/elasticsearch/lib/lucene-queries-3.0.3.jar
+
+%default INDEX 'ufo_sightings'
+%default OBJ   'ufo_sighting'        
+
+ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv' AS (sighted_at:long, reported_at:long, location:chararray, shape:chararray, duration:chararray, description:chararray);
+STORE ufo_sightings INTO 'es://$INDEX/$OBJ' USING com.infochimps.elasticsearch.pig.ElasticSearchIndex('-1', '1000');
+</code></pre>
+
+Other constructors for the udf include:
+
+* ElasticSearchIndex()
+* ElasticSearchIndex(idField, bulkSize)
+* ElasticSearchIndex(idField, bulkSize, esConfig)
+* ElasticSearchIndex(idField, bulkSize, esConfig, esPlugins)
+
+where:
+
+@idField@   = Which field of the record to use as the record id. If none is passed in
+              then the record is assumed to have no id.
+@bulkSize@  = Number of records for ElasticSearchOutputFormat to batch up before sending
+              a bulk index request to Elastic Search. Default: 1000.
+@esConfig@  = Full path to local elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
+@esPlugins@ = Full path to local elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
+
+Note that elasticsearch.yml and the plugins directory are distributed to every machine in the cluster automatically via hadoop's distributed cache mechanism.
+
+h4. ElasticSearchJsonIndex
+
+This allows you to store arbitrary json data into elasticsearch.
+
+<pre><code>
+register target/wonderdog-1.0-SNAPSHOT.jar;
+register /usr/local/share/elasticsearch/lib/elasticsearch-0.14.2.jar;
+register /usr/local/share/elasticsearch/lib/jline-0.9.94.jar;
+register /usr/local/share/elasticsearch/lib/jna-3.2.7.jar;
+register /usr/local/share/elasticsearch/lib/log4j-1.2.15.jar;
+register /usr/local/share/elasticsearch/lib/lucene-analyzers-3.0.3.jar;
+register /usr/local/share/elasticsearch/lib/lucene-core-3.0.3.jar;
+register /usr/local/share/elasticsearch/lib/lucene-fast-vector-highlighter-3.0.3.jar;
+register /usr/local/share/elasticsearch/lib/lucene-highlighter-3.0.3.jar;
+register /usr/local/share/elasticsearch/lib/lucene-memory-3.0.3.jar;
+register /usr/local/share/elasticsearch/lib/lucene-queries-3.0.3.jar;        
+        
+%default INDEX 'foo_test'
+%default OBJ   'foo'        
+
+foo = LOAD 'test/foo.json' AS (data:chararray);
+STORE foo INTO 'es://$INDEX/$OBJ' USING com.infochimps.elasticsearch.pig.ElasticSearchJsonIndex('-1', '10');
+</code></pre>
 
 h2. Admin
 
@@ -152,45 +201,7 @@ bin/estool --host=<elasticsearch_host> --index_name=<index_name> delete_index
 And so on. Most of the common rest api operations have be mapped into estool.
 
 
-h2. Using the ElasticSearchIndex storefunc
 
-The wonderdog repo comes with a nifty storage udf for Apache Pig. Here's a simple example of how to use it:
-
-<pre><code>
-register build/wonderdog.jar
-register /usr/local/share/elasticsearch/lib/elasticsearch-0.14.2.jar
-register /usr/local/share/elasticsearch/lib/jline-0.9.94.jar
-register /usr/local/share/elasticsearch/lib/jna-3.2.7.jar
-register /usr/local/share/elasticsearch/lib/log4j-1.2.15.jar
-register /usr/local/share/elasticsearch/lib/lucene-analyzers-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-core-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-fast-vector-highlighter-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-highlighter-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-memory-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-queries-3.0.3.jar
-
-%default INDEX 'ufo_sightings'
-%default OBJ   'ufo_sighting'        
-
-ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv' AS (sighted_at:long, reported_at:long, location:chararray, shape:chararray, duration:chararray, description:chararray);
-STORE ufo_sightings INTO 'es://$INDEX/$OBJ' USING com.infochimps.elasticsearch.pig.ElasticSearchIndex('-1', '1000');
-</code></pre>
-
-Other constructors for the udf include:
-
-* ElasticSearchIndex()
-* ElasticSearchIndex(idField, bulkSize)
-* ElasticSearchIndex(idField, bulkSize, esConfig)
-* ElasticSearchIndex(idField, bulkSize, esConfig, esPlugins)
-
-where:
-
-@idField@   = Which field of the record to use as the record id. If none is passed in
-              then the record is assumed to have no id.
-@bulkSize@  = Number of records for ElasticSearchOutputFormat to batch up before sending
-              a bulk index request to Elastic Search. Default: 1000.
-@esConfig@  = Full path to elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
-@esPlugins@ = Full path to elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
 
 
 
