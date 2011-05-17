@@ -41,6 +41,7 @@ import org.apache.pig.impl.logicalLayer.FrontendException;
 import org.apache.pig.impl.util.Utils;
 import org.apache.pig.impl.util.UDFContext;
 
+import com.infochimps.elasticsearch.hadoop.util.HadoopUtils;
 import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
 
 /**
@@ -90,6 +91,8 @@ public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterf
     private static final String DEFAULT_BULK = "1000";
     private static final String DEFAULT_ES_CONFIG = "/etc/elasticsearch/elasticsearch.yml";
     private static final String DEFAULT_ES_PLUGINS = "/usr/local/share/elasticsearch/plugins";
+    private static final String ES_CONFIG_HDFS_PATH = "/tmp/elasticsearch/elasticsearch.yml";
+    private static final String ES_PLUGINS_HDFS_PATH = "/tmp/elasticsearch/plugins";
     
     public ElasticSearchJsonIndex() {
         this(NO_ID_FIELD, DEFAULT_BULK);
@@ -140,8 +143,14 @@ public class ElasticSearchJsonIndex extends StoreFunc implements StoreFuncInterf
 
             // Adds the elasticsearch.yml file (esConfig) to the distributed cache
             try {
-                DistributedCache.addCacheFile(new URI(LOCAL_SCHEME+esConfig), job.getConfiguration());
-                DistributedCache.addCacheArchive(new URI(LOCAL_SCHEME+esPlugins), job.getConfiguration());                
+                Path hdfsConfigPath = new Path(ES_CONFIG_HDFS_PATH);
+                Path hdfsPluginsPath = new Path(ES_PLUGINS_HDFS_PATH);
+
+                HadoopUtils.uploadLocalFile(new Path(LOCAL_SCHEME+esConfig), hdfsConfigPath, job.getConfiguration());
+                HadoopUtils.shipFileIfNotShipped(hdfsConfigPath, job.getConfiguration());
+
+                HadoopUtils.uploadLocalFile(new Path(LOCAL_SCHEME+esPlugins), hdfsPluginsPath, job.getConfiguration());
+                HadoopUtils.shipArchiveIfNotShipped(hdfsPluginsPath, job.getConfiguration());                
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

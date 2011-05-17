@@ -37,6 +37,8 @@ import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.ExceptionsHelper;
 
+import com.infochimps.elasticsearch.hadoop.util.HadoopUtils;
+
 /**
    
    Hadoop OutputFormat for writing arbitrary MapWritables (essentially HashMaps) into Elasticsearch. Records are batched up and sent
@@ -81,6 +83,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
 
         // Other string constants
         private static final String COMMA = ",";
+        private static final String SLASH = "/";
         private static final String NO_ID_FIELD = "-1";
         
         private volatile BulkRequestBuilder currentRequest;
@@ -130,28 +133,16 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             // Fetches elasticsearch.yml and the plugins directory from the distributed cache
             //
             try {
-                URI[] cacheFiles = DistributedCache.getCacheFiles(conf);
-                for (URI cacheFile : cacheFiles) {
-                    if ((new File(cacheFile)).getName().equals(ES_CONFIG_NAME)) {
-                        LOG.info("Found ElasticSearch configuration ["+cacheFile.getPath()+"] in the distributed cache");
-                        System.setProperty(ES_CONFIG, cacheFile.getPath());
-                        break;
-                    }
-                }
-
-                URI[] cacheArchives = DistributedCache.getCacheArchives(conf);
-
-                for (URI cacheArchive : cacheArchives) {
-                    if ((new File(cacheArchive)).getName().equals(ES_PLUGINS_NAME)) {
-                        LOG.info("Found ElasticSearch configuration ["+cacheArchive.getPath()+"] in the distributed cache");
-                        System.setProperty(ES_PLUGINS, cacheArchive.getPath());
-                        break;
-                    }
-                }
+                String taskConfigPath = HadoopUtils.fetchFileFromCache(ES_CONFIG_NAME, conf);
+                LOG.info("Using ["+taskConfigPath+"] as es.config");
+                String taskPluginsPath = HadoopUtils.fetchArchiveFromCache(ES_PLUGINS_NAME, conf);
+                LOG.info("Using ["+taskPluginsPath+"] as es.plugins.dir");
+                System.setProperty(ES_CONFIG, taskConfigPath);
+                System.setProperty(ES_PLUGINS, taskPluginsPath+SLASH+ES_PLUGINS_NAME);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
+            
             start_embedded_client();
             initialize_index(indexName);
             currentRequest = client.prepareBulk();
