@@ -1,6 +1,7 @@
 package com.infochimps.elasticsearch.pig;
 
 import java.io.IOException;
+import java.lang.InterruptedException;
 import java.util.Properties;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,9 @@ import org.apache.pig.StoreFuncInterface;
 import org.apache.pig.ResourceSchema;
 import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
+import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
 
 import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
 import com.infochimps.elasticsearch.ElasticSearchInputFormat;
@@ -51,6 +54,9 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
     private static final String ES_IS_JSON = "elasticsearch.is_json";
     private static final String PIG_ES_FIELD_NAMES = "elasticsearch.pig.field.names";
+    private static final String ES_REQUEST_SIZE = "elasticsearch.request.size";
+    private static final String ES_NUM_SPLITS = "elasticsearch.num.input.splits";
+    private static final String ES_QUERY_STRING = "elasticsearch.query.string";
     
     private static final String COMMA = ",";
     private static final String LOCAL_SCHEME = "file://";
@@ -59,6 +65,8 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     private static final String DEFAULT_ES_PLUGINS = "/usr/local/share/elasticsearch/plugins";
     private static final String ES_CONFIG_HDFS_PATH = "/tmp/elasticsearch/elasticsearch.yml";
     private static final String ES_PLUGINS_HDFS_PATH = "/tmp/elasticsearch/plugins";
+    private static final String ES_CONFIG = "es.config";
+    private static final String ES_PLUGINS = "es.path.plugins";
     
     public ElasticSearchStorage() {
         this(DEFAULT_ES_CONFIG, DEFAULT_ES_PLUGINS);
@@ -74,7 +82,19 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     }
 
     @Override
-    public Tuple getNext() throws IOException {
+        public Tuple getNext() throws IOException {
+        try {
+            Tuple tuple = TupleFactory.getInstance().newTuple(2);
+            if (reader.nextKeyValue()) {
+                Text docId = (Text)reader.getCurrentKey();
+                Text docContent = (Text)reader.getCurrentValue();
+                tuple.set(0, new DataByteArray(docId.toString()));
+                tuple.set(1, new DataByteArray(docContent.toString()));
+                return tuple;
+            }
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
         return null;
     }
 
@@ -95,6 +115,7 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
 
     @Override
     public void setLocation(String location, Job job) throws IOException {
+        elasticSearchSetup(location, job);
     }
 
     @Override
@@ -171,9 +192,7 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
                 }
             }
         }
-        
-        
-        
+                
         try {
             writer.write(NullWritable.get(), record);
         } catch (InterruptedException e) {
@@ -187,13 +206,9 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     }
 
     /**
-       Look at the passed in uri and hadoop configuration and set options.
-       <p>
-       <b>WARNING</b> Note that, since this is called more than once, it is
-       critical to ensure that we do not change or reset anything we've already set.
-     */
-    @Override
-    public void setStoreLocation(String location, Job job) throws IOException {
+       Pull out the elasticsearch setup code
+    */
+    private void elasticSearchSetup(String location, Job job) {
         // Need to use the uri parsing library here to pull out everything
         try {
 
@@ -217,16 +232,25 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
                 job.getConfiguration().set(ES_INDEX_NAME, esHost);
                 job.getConfiguration().set(ES_OBJECT_TYPE, parsedLocation.getPath().replaceAll("/", ""));
 
-                // Set the bulk request size in the Hadoop configuration
-                String bulkSize = query.get("size");
-                if (bulkSize == null) bulkSize = DEFAULT_BULK;
-                job.getConfiguration().set(ES_BULK_SIZE, bulkSize);
-
+                // Set the request size in the Hadoop configuration
+                String requestSize = query.get("size");
+                if (requestSize == null) requestSize = DEFAULT_BULK;
+                job.getConfiguration().set(ES_BULK_SIZE, requestSize);
+                job.getConfiguration().set(ES_REQUEST_SIZE, requestSize);
+                
                 // Set the id field name in the Hadoop configuration
                 String idFieldName = query.get("id");
                 if (idFieldName == null) idFieldName = "-1";
                 job.getConfiguration().set(ES_ID_FIELD_NAME, idFieldName);
-                
+
+                String queryString = query.get("q");
+                if (queryString==null) queryString = "*";
+                job.getConfiguration().set(ES_QUERY_STRING, queryString);
+
+                String numTasks = query.get("tasks");
+                if (numTasks==null) numTasks = "100";
+                job.getConfiguration().set(ES_NUM_SPLITS, numTasks);
+
                 // Adds the elasticsearch.yml file (esConfig) and the plugins directory (esPlugins) to the distributed cache
                 try {
                     Path hdfsConfigPath = new Path(ES_CONFIG_HDFS_PATH);
@@ -242,6 +266,9 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
                     throw new RuntimeException(e);
                 }
 
+                //
+                // This gets set even when loading data from elasticsearch
+                //
                 String isJson = query.get("json");
                 if (isJson==null || isJson.equals("false")) {
                     // We're dealing with delimited records
@@ -249,11 +276,25 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
                     Properties property = context.getUDFProperties(ResourceSchema.class);
                     property.setProperty(ES_IS_JSON, "false");
                 }
-                
+
+                // Need to set this to start the local instance of elasticsearch
+                job.getConfiguration().set(ES_CONFIG, esConfig);
+                job.getConfiguration().set(ES_PLUGINS, esPlugins);
             }            
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
-        }        
+        }
+    }
+
+    /**
+       Look at the passed in uri and hadoop configuration and set options.
+       <p>
+       <b>WARNING</b> Note that, since this is called more than once, it is
+       critical to ensure that we do not change or reset anything we've already set.
+     */
+    @Override
+    public void setStoreLocation(String location, Job job) throws IOException {
+        elasticSearchSetup(location, job);
     }
 
     /**

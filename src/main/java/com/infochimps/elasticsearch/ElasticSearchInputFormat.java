@@ -1,6 +1,7 @@
 package com.infochimps.elasticsearch;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -73,10 +74,11 @@ public class ElasticSearchInputFormat extends InputFormat<Text, Text> implements
        The number of splits is specified in the Hadoop configuration object. 
      */
     public List<InputSplit> getSplits(JobContext context) {
-
+        setConf(context.getConfiguration());
         List<InputSplit> splits = new ArrayList<InputSplit>(numSplits.intValue());
         for(int i = 0; i < numSplits; i++) {
-            splits.add(new ElasticSearchSplit(queryString, i*numSplitRecords, numSplitRecords-1));
+            Long size = (numSplitRecords == 1) ? 1 : numSplitRecords-1; 
+            splits.add(new ElasticSearchSplit(queryString, i*numSplitRecords, size));
         }
         if (numHits % numSplits > 0) splits.add(new ElasticSearchSplit(queryString, numSplits*numSplitRecords, numHits % numSplits - 1));
         LOG.info("Created ["+splits.size()+"] splits for ["+numHits+"] hits");
@@ -132,8 +134,8 @@ public class ElasticSearchInputFormat extends InputFormat<Text, Text> implements
             .execute()
             .actionGet();
         this.numHits = response.hits().totalHits();
-        this.numSplitRecords = (numHits/numSplits);
         if(numSplits > numHits) numSplits = numHits; // This could be bad
+        this.numSplitRecords = (numHits/numSplits);
     }
 
     protected class ElasticSearchRecordReader extends RecordReader<Text, Text> {
@@ -203,22 +205,24 @@ public class ElasticSearchInputFormat extends InputFormat<Text, Text> implements
                 .setSize(recsToRead.intValue())
                 .setQuery(QueryBuilders.queryString(queryString))                
                 .execute()
-                .actionGet();            
+                .actionGet();
             return response.hits().iterator();
         }
         
         @Override
         public boolean nextKeyValue() throws IOException {
             if (hitsItr!=null) {
-                if (recordsRead < recsToRead && hitsItr.hasNext()) {
-                    SearchHit hit = hitsItr.next();
-                    currentKey = new Text(hit.id());
-                    currentValue = new Text(hit.sourceAsString());
-                    recordsRead += 1;
+                if (recordsRead < recsToRead) {
+                    if (hitsItr.hasNext()) {
+                        SearchHit hit = hitsItr.next();
+                        currentKey = new Text(hit.id());
+                        currentValue = new Text(hit.sourceAsString());
+                        recordsRead += 1;
+                        return true;
+                    }
                 } else {
                     hitsItr = null;
                 }
-                return true;
             } else {
                 if (recordsRead < recsToRead) {
                     hitsItr = fetchNextHits();
@@ -229,10 +233,9 @@ public class ElasticSearchInputFormat extends InputFormat<Text, Text> implements
                         recordsRead += 1;
                         return true;
                     }
-                    return false;
                 }
-                return false;
             }
+            return false;
         }
     
         @Override
