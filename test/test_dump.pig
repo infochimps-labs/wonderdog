@@ -1,5 +1,5 @@
 --
--- This tests the json indexer. Run in local mode with 'pig -x local test/test_json_loader.pig'
+-- This tests loading data from elasticsearch
 --
 register '/usr/local/share/elasticsearch/lib/elasticsearch-0.16.0.jar';
 register '/usr/local/share/elasticsearch/lib/jline-0.9.94.jar';
@@ -15,10 +15,8 @@ register target/wonderdog-1.0-SNAPSHOT.jar;
 %default INDEX 'foo_test'
 %default OBJ   'foo'        
 
-foo = LOAD 'test/foo.json' AS (data:chararray);
-
 --
--- Query parameters let elasticsearch output format that we're storing json data and
--- want to use a bulk request size of 1 record.
+-- Will load the data as (doc_id, contents) tuples where the contents is the original json source from elasticsearch
 --
-STORE foo INTO 'es://$INDEX/$OBJ?json=true&size=1' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage();
+foo = LOAD 'es://foo_test/foo?q=character:c' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage() AS (doc_id:chararray, contents:chararray);
+DUMP foo;
