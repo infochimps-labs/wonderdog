@@ -1,18 +1,77 @@
 h1. Wonderdog
 
-Wonderdog is a bulkloader for Elastic Search.
+Wonderdog is a Hadoop interface to Elastic Search. While it is specifically intended for use with Apache Pig, it does include all the necessary Hadoop input and output formats for Elastic Search. That is, it's possible to skip Pig entirely and write custom Hadoop jobs if you prefer.
 
 h2. Requirements
 
-h3. Hadoop cluster setup:
-
-Wonderdog makes use of hadoop to do its bulk loading so you'll need to have a fully functional hadoop cluster lying around. However, since wonderdog uses hadoop's distributed cache to distribute configuration and other files, no additional configuration of the hadoop cluster is necessary. 
-
-h3. ElasticSearch cluster setup:
-
-Well, you'll have to have an elasticsearch cluster setup somewhere. There is far better documentation for doing that elsewhere, namely the elasticsearch "guide":http://www.elasticsearch.org/guide/
-
 h2. Usage
+
+h3. Using ElasticSearchStorage for Apache Pig
+
+The most up-to-date (and simplest) way to store data into elasticsearch with hadoop is to use the Pig Store Function. You can write both delimited and json data to elasticsearch as well as read data from elasticsearch.
+
+h4. Storing tabular data:
+
+This allows you to store tabular data (eg. tsv, csv) into elasticsearch.
+
+<pre><code>
+register 'target/wonderdog.jar';
+register '/usr/local/share/elasticsearch/lib/elasticsearch-0.16.0.jar';
+register '/usr/local/share/elasticsearch/lib/jline-0.9.94.jar';
+register '/usr/local/share/elasticsearch/lib/jna-3.2.7.jar';
+register '/usr/local/share/elasticsearch/lib/log4j-1.2.15.jar';
+register '/usr/local/share/elasticsearch/lib/lucene-analyzers-3.1.0.jar';
+register '/usr/local/share/elasticsearch/lib/lucene-core-3.1.0.jar';
+register '/usr/local/share/elasticsearch/lib/lucene-highlighter-3.1.0.jar';
+register '/usr/local/share/elasticsearch/lib/lucene-memory-3.1.0.jar';
+register '/usr/local/share/elasticsearch/lib/lucene-queries-3.1.0.jar';
+
+%default INDEX 'ufo_sightings'
+%default OBJ   'ufo_sighting'        
+
+ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv' AS (sighted_at:long, reported_at:long, location:chararray, shape:chararray, duration:chararray, description:chararray);
+STORE ufo_sightings INTO 'es://$INDEX/$OBJ?json=false&size=1000' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage();
+</code></pre>
+
+Here the fields that you set in Pig (eg. 'sighted_at') are used as the field names when creating json records for elasticsearch.
+
+h4. Storing json data:
+
+You can store json data just as easily.
+
+<pre><code>
+ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv.json' AS (json_record:chararray);
+STORE ufo_sightings INTO 'es://$INDEX/$OBJ?json=true&size=1000' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage();
+</code></pre>
+
+h4. Reading data:
+
+Easy too.
+
+<pre><code>
+-- dump some of the ufo sightings index based on free text query
+alien_sightings = LOAD 'es://ufo_sightings/ufo_sightings?q=alien' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage() AS (doc_id:chararray, contents:chararray);
+DUMP alien_sightings;
+</code></pre>
+
+h4. ElasticSearchStorage Constructor
+
+The constructor to the UDF can take two arguments (in the following order):
+
+* @esConfig@ - The full path to where elasticsearch.yml lives on the machine launching the hadoop job
+* @esPlugins@ - The full path to where the elasticsearch plugins directory lives on the machine launching the hadoop job
+
+h4. Query Parameters
+
+There are a few query paramaters available:
+
+* @json@ - (STORE only) When 'true' indicates to the StoreFunc that pre-rendered json records are being indexed. Default is false.
+* @size@ - When storing, this is used as the bulk request size (the number of records to stack up before indexing to elasticsearch). When loading, this is the number of records to fetch per request. Default 1000.
+* @q@ - (LOAD only) A free text query determining which records to load. If empty, matches all documents in the index.
+* @id@ - (STORE only) The name of the field to use as a document id. If blank (or -1) the documents are assumed to have no id and are assigned one by elasticsearch.
+* @tasks@ - (LOAD only) The number of map tasks to launch. Default 100.
+
+Note that elasticsearch.yml and the plugins directory are distributed to every machine in the cluster automatically via hadoop's distributed cache mechanism.
 
 h3. Native Hadoop TSV Loader
 
@@ -80,76 +139,6 @@ h4. TSV loader command-line options
 * @rm@ - Remove existing output? (true or leave blank)
 * @hadoop_home@ - Path to hadoop installation, read from the HADOOP_HOME environment variable if it's set
 * @min_split_size@ - Min split size for maps
-
-h3. Using the ElasticSearchIndex and ElasticSearchJsonIndex Pig Store Functions
-
-The most up-to-date (and simplest) way to store data into elasticsearch with hadoop is to use the Pig Store Functions. Here you've got two options.
-
-h4. ElasticSearchIndex
-
-This allows you to store tabular data (eg. tsv, csv) into elasticsearch.
-
-<pre><code>
-register target/wonderdog.jar
-register /usr/local/share/elasticsearch/lib/elasticsearch-0.14.2.jar
-register /usr/local/share/elasticsearch/lib/jline-0.9.94.jar
-register /usr/local/share/elasticsearch/lib/jna-3.2.7.jar
-register /usr/local/share/elasticsearch/lib/log4j-1.2.15.jar
-register /usr/local/share/elasticsearch/lib/lucene-analyzers-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-core-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-fast-vector-highlighter-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-highlighter-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-memory-3.0.3.jar
-register /usr/local/share/elasticsearch/lib/lucene-queries-3.0.3.jar
-
-%default INDEX 'ufo_sightings'
-%default OBJ   'ufo_sighting'        
-
-ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv' AS (sighted_at:long, reported_at:long, location:chararray, shape:chararray, duration:chararray, description:chararray);
-STORE ufo_sightings INTO 'es://$INDEX/$OBJ' USING com.infochimps.elasticsearch.pig.ElasticSearchIndex('-1', '1000');
-</code></pre>
-
-Other constructors for the udf include:
-
-* ElasticSearchIndex()
-* ElasticSearchIndex(idField, bulkSize)
-* ElasticSearchIndex(idField, bulkSize, esConfig)
-* ElasticSearchIndex(idField, bulkSize, esConfig, esPlugins)
-
-where:
-
-@idField@   = Which field of the record to use as the record id. If none is passed in
-              then the record is assumed to have no id.
-@bulkSize@  = Number of records for ElasticSearchOutputFormat to batch up before sending
-              a bulk index request to Elastic Search. Default: 1000.
-@esConfig@  = Full path to local elasticsearch.yml. Default: /etc/elasticsearch/elasticsearch.yml
-@esPlugins@ = Full path to local elastic search plugins dir. Default: /usr/local/share/elasticsearch/plugins
-
-Note that elasticsearch.yml and the plugins directory are distributed to every machine in the cluster automatically via hadoop's distributed cache mechanism.
-
-h4. ElasticSearchJsonIndex
-
-This allows you to store arbitrary json data into elasticsearch.
-
-<pre><code>
-register target/wonderdog-1.0-SNAPSHOT.jar;
-register /usr/local/share/elasticsearch/lib/elasticsearch-0.14.2.jar;
-register /usr/local/share/elasticsearch/lib/jline-0.9.94.jar;
-register /usr/local/share/elasticsearch/lib/jna-3.2.7.jar;
-register /usr/local/share/elasticsearch/lib/log4j-1.2.15.jar;
-register /usr/local/share/elasticsearch/lib/lucene-analyzers-3.0.3.jar;
-register /usr/local/share/elasticsearch/lib/lucene-core-3.0.3.jar;
-register /usr/local/share/elasticsearch/lib/lucene-fast-vector-highlighter-3.0.3.jar;
-register /usr/local/share/elasticsearch/lib/lucene-highlighter-3.0.3.jar;
-register /usr/local/share/elasticsearch/lib/lucene-memory-3.0.3.jar;
-register /usr/local/share/elasticsearch/lib/lucene-queries-3.0.3.jar;        
-        
-%default INDEX 'foo_test'
-%default OBJ   'foo'        
-
-foo = LOAD 'test/foo.json' AS (data:chararray);
-STORE foo INTO 'es://$INDEX/$OBJ' USING com.infochimps.elasticsearch.pig.ElasticSearchJsonIndex('-1', '10');
-</code></pre>
 
 h2. Admin
 
