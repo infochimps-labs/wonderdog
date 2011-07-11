@@ -60,7 +60,6 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private String idFieldName;
         private String objType;
         private String[] fieldNames;
-        private boolean isJSON;
         
         // Used for bookkeeping purposes
         private AtomicLong totalBulkTime  = new AtomicLong();
@@ -73,9 +72,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private static final String ES_PLUGINS_NAME = "plugins";
         private static final String ES_INDEX_NAME = "elasticsearch.index.name";
         private static final String ES_BULK_SIZE = "elasticsearch.bulk.size";
-        private static final String ES_IS_JSON = "elasticsearch.is_json";
         private static final String ES_ID_FIELD_NAME = "elasticsearch.id.field.name";
-        private static final String ES_FIELD_NAMES = "elasticsearch.field.names";
         private static final String ES_ID_FIELD = "elasticsearch.id.field";
         private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
         private static final String ES_CONFIG = "es.config";
@@ -113,19 +110,12 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             Configuration conf = context.getConfiguration();
             this.indexName = conf.get(ES_INDEX_NAME);
             this.bulkSize = Integer.parseInt(conf.get(ES_BULK_SIZE));
-            this.isJSON = conf.getBoolean(ES_IS_JSON, false);
-            if (isJSON) {
-                LOG.info("Documents will be processed as JSON documents");
-                this.idFieldName = conf.get(ES_ID_FIELD_NAME);
-                if (idFieldName.equals(NO_ID_FIELD)) {
-                    LOG.info("Documents will be assigned ids by elasticsearch");
-                    this.idField = -1;
-                } else {
-                    LOG.info("Using field:["+idFieldName+"] for document ids");
-                }
+            this.idFieldName = conf.get(ES_ID_FIELD_NAME);
+            if (idFieldName.equals(NO_ID_FIELD)) {
+                LOG.info("Documents will be assigned ids by elasticsearch");
+                this.idField = -1;
             } else {
-                this.fieldNames = conf.get(ES_FIELD_NAMES).split(COMMA);
-                this.idField    = Integer.parseInt(conf.get(ES_ID_FIELD));                
+                LOG.info("Using field:["+idFieldName+"] for document ids");
             }
             this.objType    = conf.get(ES_OBJECT_TYPE);
             
@@ -181,12 +171,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
             } else {
                 try {
-                    Text mapKey = null;
-                    if (isJSON) {                        
-                        mapKey = new Text(idFieldName);
-                    } else {
-                        mapKey = new Text(fieldNames[idField]);
-                    }
+                    Text mapKey = new Text(idFieldName);
                     String record_id = fields.get(mapKey).toString();
                     currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));                    
                 } catch (Exception e) {
