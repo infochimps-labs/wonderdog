@@ -195,6 +195,8 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 builder.value(((DoubleWritable)value).get());
             } else if (value instanceof FloatWritable) {
                 builder.value(((FloatWritable)value).get());
+            } else if (value instanceof BooleanWritable) {
+                builder.value(((BooleanWritable)value).get());                
             } else if (value instanceof MapWritable) {
                 builder.startObject();
                 for (Map.Entry<Writable,Writable> entry : ((MapWritable)value).entrySet()) {
