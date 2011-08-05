@@ -328,6 +328,8 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
             return new DoubleWritable((Double)thing);
         } else if (thing instanceof Float) {
             return new FloatWritable((Float)thing);
+        } else if (thing instanceof Boolean) {
+            return new BooleanWritable((Boolean)thing);
         } else if (thing instanceof Map) {
             MapWritable result = new MapWritable();
             for (Map.Entry<String,Object> entry : ((Map<String,Object>)thing).entrySet()) {
