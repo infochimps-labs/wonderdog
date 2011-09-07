@@ -1,5 +1,7 @@
 package com.infochimps.elasticsearch.hadoop.util;
 
+import java.io.File;
+
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
@@ -27,11 +29,10 @@ public class HadoopUtils {
        Upload a local file to the cluster, if it's newer or nonexistent
      */
     public static void uploadLocalFileIfChanged(Path localsrc, Path hdfsdest, Configuration conf) throws IOException {
-        FileSystem fs = FileSystem.get(conf);
-        FileStatus l_stat = fs.getFileStatus(localsrc);
+        long l_time = new File(localsrc.toUri()).lastModified();
         try {
-            FileStatus h_stat = fs.getFileStatus(hdfsdest);
-            if ( l_stat.getModificationTime() > h_stat.getModificationTime() ) {
+            long h_time = FileSystem.get(conf).getFileStatus(hdfsdest).getModificationTime();
+            if ( l_time > h_time ) {
                 uploadLocalFile(localsrc, hdfsdest, conf);
             }
         }
