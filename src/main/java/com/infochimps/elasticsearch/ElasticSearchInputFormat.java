@@ -27,8 +27,8 @@ import org.elasticsearch.client.Requests;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.index.query.xcontent.FilterBuilders.*;
-import org.elasticsearch.index.query.xcontent.QueryBuilders;
+import org.elasticsearch.index.query.FilterBuilders.*;
+import org.elasticsearch.index.query.QueryBuilders;
 
 /**
    
