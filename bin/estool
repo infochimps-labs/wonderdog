@@ -3,24 +3,66 @@
 require 'rubygems'
 require 'json'
 require 'rake'
-require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
+# require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
 
-Settings.define :host,  :required => true, :description => "Elastic search cluster host ip address"
-Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
-Settings.define :index_name,               :description => "Which index to address?"
-Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
-Settings.define :num_segments, :default => 3, :description => "When optimizing index, how many segments to use"
-Settings.define :object_type,              :description => "When 'putting' the mapping, which object type to update"
-Settings.define :object_def_file,          :description => "When 'putting' the mapping, full path to json config file describing object and its fields"
-Settings.define :query_string,             :description => "Query string to use when querying the index"
-Settings.resolve!
+# Settings.define :host,  :required => true, :description => "Elastic search cluster host ip address"
+# Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
+# Settings.define :index_name,               :description => "Which index to address?"
+# Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
+# Settings.define :num_segments, :default => 3, :description => "When optimizing index, how many segments to use"
+# Settings.define :object_type,              :description => "When 'putting' the mapping, which object type to update"
+# Settings.define :object_def_file,          :description => "When 'putting' the mapping, full path to json config file describing object and its fields"
+# Settings.define :query_string,             :description => "Query string to use when querying the index"
+# Settings.resolve!
 
-#
-# Prints status of all indices as a json hash to the terminal
-#
-task :status do
-  sh "curl -s -XGET \"http://%s:%s/_status?pretty=true\"" % [Settings.host, Settings.port]
-end
+require 'optparse'
+require 'json'
+require 'gorillib/array/compact_blank'
+require 'gorillib/logger/log'
+
+options = OpenStruct.new
+OptionParser.new do |opts|
+  
+  opts.banner = <<EOS
+Usage: estool <command> [options..]
+
+Commands include: 
+    status                           Returns the status of INDEX
+    
+Options include:
+EOS
+
+  options.host  = 'localhost'
+  options.port  = 9200
+  options.index = nil
+  options.usage = opts
+
+  opts.on('-n', '--host HOSTNAME', 'Connect to ElasticSearch on HOSTNAME', 'Defaults to localhost') do |host|
+    options.host = host
+  end
+
+  opts.on('-p', '--port PORT', 'Connect to ElasticSearch using PORT', 'Defaults to 9200') do |port|
+    options.port = port
+  end
+
+  opts.on('-i','--index NAME','Name of index to query against', 'Defaults to _all') do |index|
+    options.index = index
+  end
+
+  opts.on('-h', '--help', 'Display this screen and exit'){ puts opts ; exit }
+end.parse!
+
+command    = ARGV.first
+available  = %w[ status health flush ]
+connection = "http://#{options.host}:#{options.port}" 
+
+
+puts "invalid command: #{command}", options.usage unless available.include? command
+
+task(:status){ sh "curl -s -XGET \"#{connection}/_status?pretty=true\"" }
+
+RakeFileUtils.verbose_flag = false
+Rake::Task[command.to_sym].invoke
 
 #
 # Prints general cluster health as json hash to the terminal
@@ -102,7 +144,7 @@ task :query do
   sh "curl -s -XGET \"http://%s:%s/%s/_search?q=%s\"" % [Settings.host, Settings.port, Settings.index_name, Settings.query_string]
 end
 
-Rake::Task[Settings.rest.first].invoke
+#Rake::Task[Settings.rest.first].invoke
 
 
 #
