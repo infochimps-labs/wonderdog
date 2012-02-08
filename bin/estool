@@ -1,24 +1,15 @@
 #!/usr/bin/env ruby
-
 require 'rubygems'
 require 'json'
+require 'socket'
+require 'optparse'
+require 'open3'
 require 'rake'
-# require 'configliere' ; Configliere.use(:commandline, :env_var, :define)
-
-# Settings.define :host,  :required => true, :description => "Elastic search cluster host ip address"
-# Settings.define :port,  :default => 9200,  :description => "Elastic search cluster port"
-# Settings.define :index_name,               :description => "Which index to address?"
 # Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
 # Settings.define :num_segments, :default => 3, :description => "When optimizing index, how many segments to use"
 # Settings.define :object_type,              :description => "When 'putting' the mapping, which object type to update"
 # Settings.define :object_def_file,          :description => "When 'putting' the mapping, full path to json config file describing object and its fields"
 # Settings.define :query_string,             :description => "Query string to use when querying the index"
-# Settings.resolve!
-
-require 'optparse'
-require 'json'
-require 'gorillib/array/compact_blank'
-require 'gorillib/logger/log'
 
 options = OpenStruct.new
 OptionParser.new do |opts|
@@ -28,145 +19,119 @@ Usage: estool <command> [options..]
 
 Commands include: 
     status                           Returns the status of INDEX
-    
+    list                             Returns a list of all indices    
+    health                           Returns the health of the shards
+    flush                            Performs a full flush of the INDEX
+    create                           Create the specified INDEX
+    delete                           Delete the specified INDEX. Requires confirmation.
+    refresh                          Refresh the specified INDEX
+    optimize                         Optimizes the specified INDEX to (-s) number of segments
+    snapshot                         Snapshots the specified INDEX to the gateway
+    segments                         Returns the segment information. Requires ElasticSearch v
+    mapping
+    set_replication
+    search
+
 Options include:
 EOS
 
-  options.host  = 'localhost'
-  options.port  = 9200
-  options.index = nil
-  options.usage = opts
+  options.host     = Socket.gethostname
+  options.port     = 9200
+  options.index    = "_all"
+  options.segments = 3
+  options.query    = "foo"
+  options.usage    = opts
 
-  opts.on('-n', '--host HOSTNAME', 'Connect to ElasticSearch on HOSTNAME', 'Defaults to localhost') do |host|
-    options.host = host
+  opts.on('-c', '--host HOSTNAME', 'Connect to ElasticSearch on HOSTNAME', 'Defaults to localhost') do |host|
+    options.host     = host
   end
 
   opts.on('-p', '--port PORT', 'Connect to ElasticSearch using PORT', 'Defaults to 9200') do |port|
-    options.port = port
+    options.port     = port
   end
 
   opts.on('-i','--index NAME','Name of index to query against', 'Defaults to _all') do |index|
-    options.index = index
+    options.index    = index
+  end
+
+  opts.on('-s', '--segments INT', 'Number of segments to optimize to', 'Defaults to 3. Use with <optimize>') do |num|
+    options.segments = num
+  end
+
+  opts.on('-q', '--query STRING', 'Query INDEX with STRING.', 'Defaults to foo. Use with <search>') do |str|
+    options.query    = str
   end
 
   opts.on('-h', '--help', 'Display this screen and exit'){ puts opts ; exit }
 end.parse!
 
-command    = ARGV.first
-available  = %w[ status health flush ]
-connection = "http://#{options.host}:#{options.port}" 
+class ESTool
+  
+  attr_reader :options
 
+  def initialize(options)
+    @options = options
+  end
+  
+  def connection() "http://#{options.host}:#{options.port}" ; end
 
-puts "invalid command: #{command}", options.usage unless available.include? command
+  def shell_response(cmd, req="-XGET")
+    url = File.join(connection, cmd)
+    Open3.popen3('curl','-s',req, url){ |stdin, stdout, stderr, thread| JSON.parse(stdout.read) }
+  end
 
-task(:status){ sh "curl -s -XGET \"#{connection}/_status?pretty=true\"" }
+  def display cmd 
+    result = self.send(cmd.to_sym)
+    puts JSON.pretty_generate result
+  end
+  
+  def status()     shell_response(File.join(options.index, "_status?")) ; end
 
-RakeFileUtils.verbose_flag = false
-Rake::Task[command.to_sym].invoke
+  def list()       status["indices"].keys ; end
 
-#
-# Prints general cluster health as json hash to the terminal
-#
-task :health do
-  sh "curl -s -XGET \"http://%s:%s/_cluster/health?pretty=true\"" % [Settings.host, Settings.port]
+  def health()     shell_response("_cluster/health?") ; end
+
+  def flush()      shell_response(File.join(options.index, "_flush?full=true")) ; end
+
+  def create()     shell_response(options.index, "-XPUT") ; end
+
+  def delete()    
+    require_confirmation!("delete", options.index)
+    shell_response(options.index, "-XDELETE") 
+  end
+  
+  def refresh()    shell_response(File.join(options.index, "_refresh"), "-XPOST") ; end
+  
+  def optimize()   shell_response(File.join(options.index, "_optimize?max_num_segements=#{options.segments}"), "-XPOST") ; end
+
+  def snapshot()   shell_response(File.join(options.index, "_gateway/snapshot"), "-XPOST") ; end
+  
+  def segments()   shell_response(File.join(options.index, "_segments")) ; end
+
+  def mapping()    shell_response(File.join(options.index, "_mapping")) ; end
+
+  # curl -s -XPUT http://host:port/index/_settings -d '{"index":{"number_of_replicas":num}}'
+  def set_replication() { "error" => "method not yet implemented" }; end
+
+  def search() shell_response(File.join(options.index, "_search?q=#{options.query}")) ; end
+
+  def require_confirmation!(meth, *args)
+    print "#{meth.capitalize} method with args #{args} requires confirmation! [yN]?"
+    response = STDIN.gets.chomp
+    if response =~ /y/i
+      print "#{meth.capitalize} method with args #{args} confirmed!"
+    else
+      print "#{meth.capitalize} method with args #{args} cancelled!"
+      exit
+    end
+  end
+
+  def method_missing meth, *args
+    puts "invalid command: #{meth}", options.usage
+    exit
+  end
+
 end
 
-#
-# Executes a full flush of the specified index, can take a while for large indices
-#
-task :flush_index do
-  sh "curl -s -XPOST \"http://%s:%s/%s/_flush?full=true\"" % [Settings.host, Settings.port, Settings.index_name]
-end
-
-#
-# Executes a full flush of all indices, this will negatively impact read performance while
-# it's taking place.
-#
-task :flush_all do
-  sh "curl -s -XPOST \"http://%s:%s/_flush?full=true\"" % [Settings.host, Settings.port]
-end
-
-#
-# Creates the specified index
-#
-task :create_index do
-  sh "curl -s -XPUT \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.index_name]
-end
-
-#
-# Sets the number of replicas for the given index. Typically want it set to 0
-# for bulk loading then bump up to 1 later.
-#
-task :set_replicas do
-  sh "curl -s -XPUT \"http://%s:%s/%s/_settings\" -d {\"index\":{\"number_of_replicas\":%s}}" % [Settings.host, Settings.port, Settings.index_name, Settings.replicas]
-end
-
-#
-# Does a full compaction, merging smaller index files, for the given index.
-#
-task :optimize_index do
-  sh "curl -s -XPOST \"http://%s:%s/%s/_optimize?max_num_segments=%s\"" % [Settings.host, Settings.port, Settings.index_name, Settings.num_segments]
-end
-
-#
-# Snapshot index to gateway
-#
-task :snapshot_index do
-  sh "curl -s -XPOST \"http://%s:%s/%s/_gateway/snapshot\"" % [Settings.host, Settings.port, Settings.index_name]
-end
-
-#
-# Delete an index, USE WITH CAUTION!
-#
-task :delete_index do
-  sh "curl -s -XDELETE \"http://%s:%s/%s/\"" % [Settings.host, Settings.port, Settings.index_name]
-end
-
-#
-# Refreshes the index and makes all operations since the last refresh avaialable for search
-#
-task :refresh_index do
-  sh "curl -s -XPOST \"http://%s:%s/%s/_refresh\"" % [Settings.host, Settings.port, Settings.index_name]
-end
-
-#
-# Puts simple mapping from json file into the given index
-#
-task :put_mapping do
-  json_def = File.read(Settings.object_def_file)
-  sh "curl -s -XPUT \"http://%s:%s/%s/%s/_mapping\" -d '#{json_def}'" % [Settings.host, Settings.port, Settings.index_name, Settings.object_type]
-end
-
-#
-# Perform query against a single index
-#
-task :query do
-  sh "curl -s -XGET \"http://%s:%s/%s/_search?q=%s\"" % [Settings.host, Settings.port, Settings.index_name, Settings.query_string]
-end
-
-#Rake::Task[Settings.rest.first].invoke
-
-
-#
-# Alternatively, one could use the rubberband gem
-#
-# $: sudo apt-get install libcurl4-dev
-# $: sudo gem install rubberband
-#
-#
-# require 'rubberband'
-#
-# client = ElasticSearch.new('10.195.215.175:9200', :index => "tweet-2010q1", :type => "tweet")
-# client.search "text:infochimps"
-
-# index_status  = client.index_status
-# num_docs      = index_status['indices']['tweet-2010q1']['docs']['num_docs']
-# num_shards    = index_status['indices']['tweet-2010q1']['settings']['index.number_of_shards']
-# num_replicas  = index_status['indices']['tweet-2010q1']['settings']['index.number_of_replicas']
-# size_in_bytes = index_status['indices']['tweet-2010q1']['store_size_in_bytes']
-#
-# state           = client.index_state
-# es_node_mapping = state['nodes'].inject({}){|hsh,node| hsh[node.last['name']] = node.last['transport_address']; hsh}
-#
-# def index_ok?; client.index_status['ok']; done
-# def cluster_color; client.cluster_health["status"]; done
+command = ARGV.first
+ESTool.new(options).display(command)
