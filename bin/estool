@@ -5,11 +5,6 @@ require 'socket'
 require 'optparse'
 require 'open3'
 require 'rake'
-# Settings.define :replicas, :default => 1,  :description => "Number of replicas to set index to"
-# Settings.define :num_segments, :default => 3, :description => "When optimizing index, how many segments to use"
-# Settings.define :object_type,              :description => "When 'putting' the mapping, which object type to update"
-# Settings.define :object_def_file,          :description => "When 'putting' the mapping, full path to json config file describing object and its fields"
-# Settings.define :query_string,             :description => "Query string to use when querying the index"
 
 options = OpenStruct.new
 OptionParser.new do |opts|
@@ -31,6 +26,7 @@ Commands include:
     mapping
     set_replication
     search
+    obj_types
 
 Options include:
 EOS
@@ -77,12 +73,12 @@ class ESTool
 
   def shell_response(cmd, req="-XGET")
     url = File.join(connection, cmd)
-    Open3.popen3('curl','-s',req, url){ |stdin, stdout, stderr, thread| JSON.parse(stdout.read) }
+    Open3.popen3('curl','-s',req, url){ |stdin, stdout, stderr, thread| JSON.parse(stdout.read, :max_nesting => 100) }
   end
 
   def display cmd 
     result = self.send(cmd.to_sym)
-    puts JSON.pretty_generate result
+    puts JSON.pretty_generate(result, :max_nesting => 100)
   end
   
   def status()     shell_response(File.join(options.index, "_status?")) ; end
@@ -114,6 +110,8 @@ class ESTool
   def set_replication() { "error" => "method not yet implemented" }; end
 
   def search() shell_response(File.join(options.index, "_search?q=#{options.query}")) ; end
+
+  def obj_types() mapping[options.index].keys ; end
 
   def require_confirmation!(meth, *args)
     print "#{meth.capitalize} method with args #{args} requires confirmation! [yN]?"
