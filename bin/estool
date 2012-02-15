@@ -36,6 +36,7 @@ EOS
   options.index    = "_all"
   options.segments = 3
   options.query    = "foo"
+  options.raw      = false
   options.usage    = opts
 
   opts.on('-c', '--host HOSTNAME', 'Connect to ElasticSearch on HOSTNAME', 'Defaults to localhost') do |host|
@@ -52,6 +53,10 @@ EOS
 
   opts.on('-s', '--segments INT', 'Number of segments to optimize to', 'Defaults to 3. Use with <optimize>') do |num|
     options.segments = num
+  end
+
+  opts.on('-r','--raw', 'Return raw JSON for parsing by another program') do 
+    options.raw      = true
   end
 
   opts.on('-q', '--query STRING', 'Query INDEX with STRING.', 'Defaults to foo. Use with <search>') do |str|
@@ -77,8 +82,9 @@ class ESTool
   end
 
   def display cmd 
-    result = self.send(cmd.to_sym)
-    puts JSON.pretty_generate(result, :max_nesting => 100)
+    result  = self.send(cmd.to_sym)
+    display = options.raw ? result.to_json : JSON.pretty_generate(result, :max_nesting => 100)
+    puts display
   end
   
   def status()     shell_response(File.join(options.index, "_status?")) ; end
