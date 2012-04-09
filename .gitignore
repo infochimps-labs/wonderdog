@@ -24,6 +24,8 @@ a.out
 .tasks-cache
 .yardoc
 
+*.log
+
 *private*
 /log/*
 /pkg/*
