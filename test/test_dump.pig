@@ -1,22 +1,19 @@
 --
 -- This tests loading data from elasticsearch
 --
-register '/usr/local/share/elasticsearch/lib/elasticsearch-0.16.0.jar';
-register '/usr/local/share/elasticsearch/lib/jline-0.9.94.jar';
-register '/usr/local/share/elasticsearch/lib/jna-3.2.7.jar';
-register '/usr/local/share/elasticsearch/lib/log4j-1.2.15.jar';
-register '/usr/local/share/elasticsearch/lib/lucene-analyzers-3.1.0.jar';
-register '/usr/local/share/elasticsearch/lib/lucene-core-3.1.0.jar';
-register '/usr/local/share/elasticsearch/lib/lucene-highlighter-3.1.0.jar';
-register '/usr/local/share/elasticsearch/lib/lucene-memory-3.1.0.jar';
-register '/usr/local/share/elasticsearch/lib/lucene-queries-3.1.0.jar';
-register target/wonderdog-1.0-SNAPSHOT.jar;
-        
-%default INDEX 'foo_test'
-%default OBJ   'foo'        
+
+%default ES_JAR_DIR '/usr/local/Cellar/elasticsearch/0.18.7/libexec'
+%default ES_YAML    '/usr/local/Cellar/elasticsearch/0.18.7/config/elasticsearch.yml'
+%default PLUGINS    '/usr/local/Cellar/elasticsearch/0.18.7/plugins'
+
+%default INDEX      'foo_test'
+%default OBJ        'foo'        
+
+register $ES_JAR_DIR/*.jar;
+register target/wonderdog*.jar;
 
 --
 -- Will load the data as (doc_id, contents) tuples where the contents is the original json source from elasticsearch
 --
-foo = LOAD 'es://foo_test/foo?q=character:c' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage() AS (doc_id:chararray, contents:chararray);
+foo = LOAD 'es://$INDEX/$OBJ' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage('$ES_YAML', '$PLUGINS') AS (doc_id:chararray, contents:chararray);
 DUMP foo;
