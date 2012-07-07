@@ -120,7 +120,8 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             this.objType    = conf.get(ES_OBJECT_TYPE);
             
             //
-            // Fetches elasticsearch.yml and the plugins directory from the distributed cache
+            // Fetches elasticsearch.yml and the plugins directory from the distributed cache, or
+            // from the local config.
             //
             try {
                 String taskConfigPath = HadoopUtils.fetchFileFromCache(ES_CONFIG_NAME, conf);
@@ -130,7 +131,8 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 System.setProperty(ES_CONFIG, taskConfigPath);
                 System.setProperty(ES_PLUGINS, taskPluginsPath+SLASH+ES_PLUGINS_NAME);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                System.setProperty("es.config",conf.get(ES_CONFIG));
+                System.setProperty("es.path.plugins",conf.get(ES_PLUGINS));
             }
             
             start_embedded_client();
