@@ -131,8 +131,8 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 System.setProperty(ES_CONFIG, taskConfigPath);
                 System.setProperty(ES_PLUGINS, taskPluginsPath+SLASH+ES_PLUGINS_NAME);
             } catch (Exception e) {
-                System.setProperty("es.config",conf.get(ES_CONFIG));
-                System.setProperty("es.path.plugins",conf.get(ES_PLUGINS));
+                System.setProperty(ES_CONFIG,conf.get(ES_CONFIG));
+                System.setProperty(ES_PLUGINS,conf.get(ES_PLUGINS));
             }
             
             start_embedded_client();
