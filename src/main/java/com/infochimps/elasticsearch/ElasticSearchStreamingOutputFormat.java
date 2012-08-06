@@ -25,10 +25,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.OutputFormat;
 import org.apache.hadoop.mapred.OutputCommitter;
 import org.apache.hadoop.filecache.DistributedCache;
-import org.apache.hadoop.util.Progressable;
+import org.apache.hadoop.util.*;
 
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.client.Client;
@@ -40,18 +41,21 @@ import org.elasticsearch.ExceptionsHelper;
 
 import com.infochimps.elasticsearch.hadoop.util.HadoopUtils;
 
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.JsonParseException;
+
 /**
    
    Hadoop OutputFormat for writing arbitrary MapWritables (essentially HashMaps) into Elasticsearch. Records are batched up and sent
    in a one-hop manner to the elastic search data nodes that will index them.
    
- */
-public class ElasticSearchStreamingOutputFormat implements Configurable, OutputFormat {
+*/
+public class ElasticSearchStreamingOutputFormat<K, V> implements Configurable, OutputFormat<K, V> {
     
     static Log LOG = LogFactory.getLog(ElasticSearchStreamingOutputFormat.class);
     private Configuration conf = null;
 
-    public RecordWriter<NullWritable, MapWritable> getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) throws IOException {
+    public RecordWriter<K, V> getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) throws IOException {
         return (RecordWriter) new ElasticSearchStreamingRecordWriter(job);
     }
 
@@ -59,216 +63,165 @@ public class ElasticSearchStreamingOutputFormat implements Configurable, OutputF
         // TODO Check if the object exists?
     }
     
-    protected class ElasticSearchStreamingRecordWriter implements RecordWriter {
+    protected class ElasticSearchStreamingRecordWriter<K, V> implements RecordWriter<K, V> {
 
-        private Node     node;
-        private Client   client;
-        private String   indexName;
-        private int      bulkSize;
-        private int      idField;
-        private String   idFieldName;
-        private String   objType;
-        private String[] fieldNames;
-        
         // Used for bookkeeping purposes
         private AtomicLong totalBulkTime  = new AtomicLong();
         private AtomicLong totalBulkItems = new AtomicLong();
         private Random     randgen        = new Random();
         private long       runStartTime   = System.currentTimeMillis();
 
-        // For hadoop configuration
-        private static final String ES_CONFIG_NAME   = "elasticsearch.yml";
-        private static final String ES_PLUGINS_NAME  = "plugins";
-        private static final String ES_INDEX_NAME    = "elasticsearch.index.name";
-        private static final String ES_BULK_SIZE     = "elasticsearch.bulk.size";
-        private static final String ES_ID_FIELD_NAME = "elasticsearch.id.field.name";
-        private static final String ES_ID_FIELD      = "elasticsearch.id.field";
-        private static final String ES_OBJECT_TYPE   = "elasticsearch.object.type";
-        private static final String ES_CONFIG        = "es.config";
-        private static final String ES_PLUGINS       = "es.path.plugins";
+        // Job settings we need to control directly from Java options.
+        private static final String ES_INDEX_OPT    = "elasticsearch.index.name";
+	private static final String ES_INDEX        = "hadoop";
+	private              String indexName;
+	
+        private static final String ES_TYPE_OPT     = "elasticsearch.type.name";
+	private static final String ES_TYPE         = "streaming_record";
+	private              String typeName;
+	
+        private static final String ES_ID_FIELD_OPT = "elasticsearch.id.field";
+	private static final String ES_ID_FIELD     = "_id";
+	private              String idFieldName;
+	
+        private static final String ES_BULK_SIZE_OPT     = "elasticsearch.bulk.size";
+	private static final String ES_BULK_SIZE         = "100";
+	private              int    bulkSize;
 
-        // Other string constants
-        private static final String COMMA       = ",";
-        private static final String SLASH       = "/";
-        private static final String NO_ID_FIELD = "-1";
-        
-        private volatile BulkRequestBuilder currentRequest;
+	// Elasticsearch internal settings required to make a client
+	// connection.
+        private static final String ES_CONFIG_OPT        = "es.config";
+        private static final String ES_CONFIG            = "/etc/elasticsearch/elasticsearch.yml";
+        private static final String ES_PLUGINS_OPT       = "es.path.plugins";
+	private static final String ES_PLUGINS           = "/usr/local/share/elasticsearch/plugins";
+        private              Node               node;
+        private              Client             client;
+        private volatile     BulkRequestBuilder currentRequest;
+	private              ObjectMapper       mapper;
 
         /**
            Instantiates a new RecordWriter for Elasticsearch
            <p>
-           The properties that <b>MUST</b> be set in the hadoop Configuration object
-           are as follows:
+           The following properties control how records will be written:
            <ul>
-           <li><b>elasticsearch.index.name</b> - The name of the elasticsearch index data will be written to. It does not have to exist ahead of time</li>
-           <li><b>elasticsearch.bulk.size</b> - The number of records to be accumulated into a bulk request before writing to elasticsearch.</li>
-           <li><b>elasticsearch.is_json</b> - A boolean indicating whether the records to be indexed are json records. If false the records are assumed to be tsv, in which case <b>elasticsearch.field.names</b> must be set and contain a comma separated list of field names</li>
-           <li><b>elasticsearch.object.type</b> - The type of objects being indexed</li>
-           <li><b>elasticsearch.config</b> - The full path the elasticsearch.yml. It is a local path and must exist on all machines in the hadoop cluster.</li>
-           <li><b>elasticsearch.plugins.dir</b> - The full path the elasticsearch plugins directory. It is a local path and must exist on all machines in the hadoop cluster.</li>
+           <li><b>elasticsearch.index.name</b> - The name of the Elasticsearch index data will be written to. It does not have to exist ahead of time.  (default: "hadoop")</li>
+	   <li><b>elasticsearch.type.name</b> - The name of the Elasticsearch type for objects being indexed.  It does not have to exist ahead of time.  (default: "streaming_record")</li>
+           <li><b>elasticsearch.bulk.size</b> - The number of records to be accumulated into a bulk request before writing to elasticsearch.  (default: 1000)</li>
+           <li><b>elasticsearch.id.field</b> - The the name of a field in the input JSON record that contains the document's id.</li>
            </ul>
-           <p>
-           The following fields depend on whether <b>elasticsearch.is_json</b> is true or false.
-           <ul>
-           <li><b>elasticsearch.id.field.name</b> - When <b>elasticsearch.is_json</b> is true, this is the name of a field in the json document that contains the document's id. If -1 is used then the document is assumed to have no id and one is assigned to it by elasticsearch.</li>
-           <li><b>elasticsearch.field.names</b> - When <b>elasticsearch.is_json</b> is false, this is a comma separated list of field names.</li>
-           <li><b>elasticsearch.id.field</b> - When <b>elasticsearch.is_json</b> is false, this is the numeric index of the field to use as the document id. If -1 is used the document is assumed to have no id and one is assigned to it by elasticsearch.</li>
-           </ul>           
-         */
+           Elasticsearch properties like "es.config" and "es.path.plugins" are still relevant and need to be set.
+	   </p>
+	*/
         public ElasticSearchStreamingRecordWriter(JobConf conf) {
-            this.indexName     = conf.get(ES_INDEX_NAME);
-            this.bulkSize      = Integer.parseInt(conf.get(ES_BULK_SIZE));
-            this.idFieldName   = conf.get(ES_ID_FIELD_NAME);
-            if (idFieldName.equals(NO_ID_FIELD)) {
-                LOG.info("Documents will be assigned ids by elasticsearch");
-                this.idField = -1;
-            } else {
-                LOG.info("Using field:["+idFieldName+"] for document ids");
-            }
-            this.objType = conf.get(ES_OBJECT_TYPE);
-            
-            //
-            // Fetches elasticsearch.yml and the plugins directory from the distributed cache, or
-            // from the local config.
-            //
-            try {
-                String taskConfigPath = HadoopUtils.fetchFileFromCache(ES_CONFIG_NAME, conf);
-                LOG.info("Using ["+taskConfigPath+"] as es.config");
-                String taskPluginsPath = HadoopUtils.fetchArchiveFromCache(ES_PLUGINS_NAME, conf);
-                LOG.info("Using ["+taskPluginsPath+"] as es.plugins.dir");
-                System.setProperty(ES_CONFIG, taskConfigPath);
-                System.setProperty(ES_PLUGINS, taskPluginsPath+SLASH+ES_PLUGINS_NAME);
-            } catch (Exception e) {
-                System.setProperty(ES_CONFIG,conf.get(ES_CONFIG));
-                System.setProperty(ES_PLUGINS,conf.get(ES_PLUGINS));
-            }
-            
-            start_embedded_client();
-            initialize_index(indexName);
-            currentRequest = client.prepareBulk();
-        }
-
-        /**
-           Closes the connection to elasticsearch. Any documents remaining in the bulkRequest object are indexed.
-         */
-        public void close(Reporter reporter) throws IOException {
-            if (currentRequest.numberOfActions() > 0) {            
-                try {
-                    BulkResponse response = currentRequest.execute().actionGet();
-                } catch (Exception e) {
-                    LOG.warn("Bulk request failed: " + e.getMessage());
-                    throw new RuntimeException(e);
-                }
-            }
-            LOG.info("Closing record writer");
-            client.close();
-            LOG.info("Client is closed");
-            if (node != null) {
-                 node.close();
-            }
-            LOG.info("Record writer closed.");
-        }
-
-        /**
-           Writes a single MapWritable record to the bulkRequest object. Once <b>elasticsearch.bulk.size</b> are accumulated the
-           records are written to elasticsearch.
-         */
-        public void write(NullWritable key, MapWritable fields) throws IOException {
-            XContentBuilder builder = XContentFactory.jsonBuilder();
-            buildContent(builder, fields);
-            if (idField == -1) {
-                // Document has no inherent id
-                currentRequest.add(Requests.indexRequest(indexName).type(objType).source(builder));
-            } else {
-                try {
-                    Text mapKey = new Text(idFieldName);
-                    String record_id = fields.get(mapKey).toString();
-                    currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));                    
-                } catch (Exception e) {
-                    LOG.warn("Encountered malformed record");
-                }
-            }
-            processBulkIfNeeded();
-        }
-
-	public void write(Object key, Object value) throws IOException {
+            this.indexName     = conf.get(ES_INDEX_OPT,    ES_INDEX);
+	    this.typeName      = conf.get(ES_TYPE_OPT,     ES_TYPE);
+	    this.idFieldName   = conf.get(ES_ID_FIELD_OPT, ES_ID_FIELD);
+	    this.bulkSize      = Integer.parseInt(conf.get(ES_BULK_SIZE_OPT, ES_BULK_SIZE));
 	    
+	    LOG.info("Writing "+Integer.toString(bulkSize)+" records per batch to /"+indexName+"/"+typeName+" using ID field '"+idFieldName+"'");
+
+	    String esConfigPath  = conf.get(ES_CONFIG_OPT,  ES_CONFIG);
+	    String esPluginsPath = conf.get(ES_PLUGINS_OPT, ES_PLUGINS);
+	    System.setProperty(ES_CONFIG_OPT,esConfigPath);
+	    System.setProperty(ES_PLUGINS_OPT,esPluginsPath);
+	    LOG.info("Using Elasticsearch configuration file at "+esConfigPath+" and plugin directory "+esPluginsPath);
+            
+            startEmbeddedClient();
+            initializeIndex();
+            this.currentRequest = client.prepareBulk();
+	    this.mapper = new ObjectMapper();
+        }
+
+	/**
+	   Start an embedded Elasticsearch client.  The client will
+	   not be a data node and will not store data locally.  The
+	   client will connect to the target Elasticsearch cluster as
+	   a client node, enabling one-hop writes for all data.
+	*/
+        private void startEmbeddedClient() {
+            LOG.info("Starting embedded Elasticsearch client (non-datanode)...");
+            this.node   = NodeBuilder.nodeBuilder().client(true).node();
+            this.client = node.client();
+	    LOG.info("Successfully joined Elasticsearch cluster '"+ClusterName.clusterNameFromSettings(node.settings())+'"');
+        }
+
+	/**
+	   Create the index we will write to if necessary.
+	*/
+        private void initializeIndex() {
+            LOG.info("Initializing index /"+indexName);
+            try {
+                client.admin().indices().prepareCreate(indexName).execute().actionGet();
+		LOG.info("Created index /"+indexName);
+            } catch (Exception e) {
+                if (ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException) {
+                    LOG.info("Index /"+indexName+" already exists");
+                } else {
+		    LOG.error("Could not initialize index /"+indexName, e);
+		}
+            }
+        }
+
+        /**
+           Writes a single input JSON record.  If the record contains
+           a field "elasticsearch.id.field" then that the value of
+           that field will be used to update an existing record in
+           Elasticsearch.  If not such field exists, the record will
+           be created and assigned an ID.
+	*/
+        public void write(K key, V value) throws IOException {
+	    String json = ((Text) key).toString();
+	    try {
+		Map<String, Object> data = mapper.readValue(json, Map.class);
+		if (data.containsKey(idFieldName)) {
+		    Object idValue = data.get(idFieldName);
+		    if ((idValue instanceof String)) {
+			currentRequest.add(Requests.indexRequest(indexName).id((String) idValue).type(typeName).create(false).source(json));
+		    }
+		} else {
+		    currentRequest.add(Requests.indexRequest(indexName).type(typeName).source(json));
+		}
+		sendRequestIfNeeded();
+	    } catch(Exception e) {
+		if (ExceptionsHelper.unwrapCause(e) instanceof JsonParseException) {
+		    LOG.debug("Bad record: "+json);
+		    return;
+		} else {
+		    LOG.error("Could not write record: "+json, e);
+		}
+	    }
 	}
 
         /**
-           Recursively untangles the MapWritable and writes the fields into elasticsearch's XContentBuilder builder.
-         */
-        private void buildContent(XContentBuilder builder, Writable value) throws IOException {
-            if (value instanceof Text) {
-                builder.value(((Text)value).toString());
-            } else if (value instanceof LongWritable) {
-                builder.value(((LongWritable)value).get());
-            } else if (value instanceof IntWritable) {
-                builder.value(((IntWritable)value).get());
-            } else if (value instanceof DoubleWritable) {
-                builder.value(((DoubleWritable)value).get());
-            } else if (value instanceof FloatWritable) {
-                builder.value(((FloatWritable)value).get());
-            } else if (value instanceof BooleanWritable) {
-                builder.value(((BooleanWritable)value).get());                
-            } else if (value instanceof MapWritable) {
-                builder.startObject();
-                for (Map.Entry<Writable,Writable> entry : ((MapWritable)value).entrySet()) {
-                    if (!(entry.getValue() instanceof NullWritable)) {
-                        builder.field(entry.getKey().toString());
-                        buildContent(builder, entry.getValue());
-                    }                    
-                }
-                builder.endObject();
-            } else if (value instanceof ArrayWritable) {
-                builder.startArray();
-                Writable[] arrayOfThings = ((ArrayWritable)value).get();
-                for (int i = 0; i < arrayOfThings.length; i++) {
-                    buildContent(builder, arrayOfThings[i]);
-                }
-                builder.endArray();
-            } 
+           Close the Elasticsearch client, sending out one last bulk
+           write if necessary.
+	*/
+        public void close(Reporter reporter) throws IOException {
+	    sendRequestIfMoreThan(0);
+	    LOG.info("Shutting down Elasticsearch client...");
+            if (client != null) client.close();
+            if (node   != null) node.close();
+            LOG.info("Successfully shut down Elasticsearch client");
         }
 
         /**
            Indexes content to elasticsearch when <b>elasticsearch.bulk.size</b> records have been accumulated.
-         */
-        private void processBulkIfNeeded() {
+	*/
+        private void sendRequestIfNeeded() {
+	    sendRequestIfMoreThan(bulkSize);
+	}
+
+	private void sendRequestIfMoreThan(int size) {
             totalBulkItems.incrementAndGet();
-            if (currentRequest.numberOfActions() >= bulkSize) {
-                try {
-                    long startTime        = System.currentTimeMillis();
-                    BulkResponse response = currentRequest.execute().actionGet();
-                    totalBulkTime.addAndGet(System.currentTimeMillis() - startTime);
-                    if (randgen.nextDouble() < 0.1) {
-                        LOG.info("Indexed [" + totalBulkItems.get() + "] in [" + (totalBulkTime.get()/1000) + "s] of indexing"+"[" + ((System.currentTimeMillis() - runStartTime)/1000) + "s] of wall clock"+" for ["+ (float)(1000.0*totalBulkItems.get())/(System.currentTimeMillis() - runStartTime) + "rec/s]");
-                    }
-                } catch (Exception e) {
-                    LOG.warn("Bulk request failed: " + e.getMessage());
-                    throw new RuntimeException(e);
-                }
+            if (currentRequest.numberOfActions() > size) {
+		long startTime        = System.currentTimeMillis();
+		BulkResponse response = currentRequest.execute().actionGet();
+		totalBulkTime.addAndGet(System.currentTimeMillis() - startTime);
+		if (randgen.nextDouble() < 0.1) {
+		    LOG.info("Indexed [" + totalBulkItems.get() + "] in [" + (totalBulkTime.get()/1000) + "s] of indexing"+"[" + ((System.currentTimeMillis() - runStartTime)/1000) + "s] of wall clock"+" for ["+ (float)(1000.0*totalBulkItems.get())/(System.currentTimeMillis() - runStartTime) + "rec/s]");
+		}
                 currentRequest = client.prepareBulk();
             }
-        }
-
-        private void initialize_index(String indexName) {
-            LOG.info("Initializing index");
-            try {
-                client.admin().indices().prepareCreate(indexName).execute().actionGet();
-            } catch (Exception e) {
-                if (ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException) {
-                    LOG.warn("Index ["+indexName+"] already exists");
-                }
-            }
-        }
-
-        //
-        // Starts an embedded elasticsearch client (ie. data = false)
-        //
-        private void start_embedded_client() {
-            LOG.info("Starting embedded elasticsearch client ...");
-            this.node   = NodeBuilder.nodeBuilder().client(true).node();
-            this.client = node.client();
         }
     }
 
