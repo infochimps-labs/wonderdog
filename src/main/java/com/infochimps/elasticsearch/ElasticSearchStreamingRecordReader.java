@@ -72,11 +72,11 @@ class ElasticSearchStreamingRecordReader<K, V> implements RecordReader<K, V> {
 	    // 
 	    // fetchNextHits();
 	} else {
-	    LOG.info("Running query for scroll ID "+scrollId+" with timeout "+scrollTimeout);
+	    // LOG.info("Running query for scroll ID "+scrollId+" with timeout "+scrollTimeout);
 	    SearchScrollRequestBuilder request  = split.scrollRequest(client, scroll, scrollId);
 	    SearchResponse             response = request.execute().actionGet();
 	    this.scrollId = response.scrollId();
-	    LOG.info("Got scroll ID "+scrollId);
+	    // LOG.info("Got scroll ID "+scrollId);
 	    this.hitsItr = response.hits().iterator();
 	}
     }
