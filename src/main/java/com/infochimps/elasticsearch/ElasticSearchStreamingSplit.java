@@ -11,8 +11,8 @@ import org.apache.hadoop.mapred.InputSplit;
 import org.elasticsearch.search.Scroll;
 
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.action.search.SearchRequestBuilder;
-import org.elasticsearch.client.action.search.SearchScrollRequestBuilder;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchScrollRequestBuilder;
 import org.elasticsearch.action.search.SearchType;
 
 public class ElasticSearchStreamingSplit  implements InputSplit, Writable {
