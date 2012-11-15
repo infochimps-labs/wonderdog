@@ -1,0 +1,3 @@
+module Wonderdog
+  VERSION = '0.0.1'
+end
