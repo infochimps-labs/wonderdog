@@ -1,6 +1,8 @@
-require 'wukong-hadoop'
-require_relative('support/integration_helper')
+require 'wonderdog'
 require 'wukong/spec_helpers'
+require_relative('support/integration_helper')
+require_relative('support/driver_helper')
+
 
 RSpec.configure do |config|
 
@@ -15,5 +17,6 @@ RSpec.configure do |config|
     
   include Wukong::SpecHelpers
   include Wukong::Elasticsearch::IntegrationHelper
+  include Wukong::Elasticsearch::DriverHelper
 end
 

@@ -10,6 +10,12 @@ module Wukong
     #   - es://my_index/first_type,second_type,third_type
     class IndexAndType
 
+      # A regular expression that matches URIs describing an
+      # Elasticsearch index and/or type to read/write from/to.
+      #
+      # @param [Regexp]
+      ES_SCHEME_REGEXP        = %r{^es://}
+      
       # The Elasticsearch index.
       #
       # @param [String]
@@ -19,6 +25,16 @@ module Wukong
       #
       # @param [String]
       attr_reader :type
+
+      # Does the given +string+ look like a possible Elasticsearch
+      # /index/type specification?
+      #
+      # @param [String] string
+      # @return [true, false]
+      def self.matches? string
+        return false unless string
+        string =~ ES_SCHEME_REGEXP
+      end
 
       # Create a new index and type specification from the given
       # +uri..
@@ -34,15 +50,14 @@ module Wukong
       # Will raise an error if the given URI is malformed.
       #
       # @param [String] uri
-      def self.uri= uri
-        begin
-          @uri   = URI.parse(uri)
-          path   = File.join(@uri.host, @uri.path)
-          @index = path.split('/')[0]
-          @type  = path.split('/')[1]
-        rescue URI::InvalidURIError => e
-          raise Wukong::Error.new("Could not parse '#{uri}' as an ElasticSearch /index/type specification")
-        end
+      def uri= uri
+        raise Wukong::Error.new("'#{uri}' is not an ElasticSearch es://index/type specification") unless self.class.matches?(uri)
+        parts = uri.gsub(ES_SCHEME_REGEXP, '').gsub(/^\/+/,'').gsub(/\/+$/,'').split('/')
+        
+        raise Wukong::Error.new("'#{uri}' is not an ElasticSearch es://index/type specification") unless parts.size.between?(1,2)
+
+        @index = parts[0]
+        @type  = parts[1]
       end
     end
   end
