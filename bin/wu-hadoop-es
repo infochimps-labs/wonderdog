@@ -47,9 +47,9 @@ EOF
 # These options we want to pass on to wu-hadoop but sometimes we want
 # to mess with one first so we'll have to reconstruct them later
 # ourselves.
-settings.define(:input,      :description => "Comma-separated list of input paths: local, HDFS, or ElasticSearch", :es => true)
-settings.define(:output,     :description => "Output path: local, HDFS, or ElasticSearch",                         :es => true)
-settings.define(:query,      :description => "Query to use when defining input splits for ElasticSearch input",    :es => true)
+settings.define(:input,      :description => "Comma-separated list of input paths: local, HDFS, or ElasticSearch", :wonderdog => true)
+settings.define(:output,     :description => "Output path: local, HDFS, or ElasticSearch",                         :wonderdog => true)
+
 
 require 'wukong/boot' ; Wukong.boot!(settings)
 
