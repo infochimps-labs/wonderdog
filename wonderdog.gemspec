@@ -11,20 +11,20 @@ Gem::Specification.new do |gem|
 
   gem.summary     = 'Make Hadoop and ElasticSearch play together nicely.'
   gem.description = <<-EOF
-  Wonderdog provides code in both Ruby and Java to make ElasticSearch
+  Wonderdog provides code in both Ruby and Java to make Elasticsearch
   a more fully-fledged member of both the Hadoop and Wukong
   ecosystems.
 
   For the Java side, Wonderdog provides InputFormat and OutputFormat
   classes for use with Hadoop (esp. Hadoop Streaming) and Pig.
 
-  For the Ruby side, Wonderdog provides a simple wrapper for wu-hadoop
-  to make running Hadoop Streaming jobs written in Wukong against
+  For the Ruby side, Wonderdog provides extensions for wu-hadoop to
+  make running Hadoop Streaming jobs written in Wukong against
   ElasticSearch easier.
 EOF
 
   gem.files         = `git ls-files`.split("\n")
-  gem.executables   = ['wu-hadoop-es']
+  gem.executables   = []
   gem.test_files    = gem.files.grep(/^spec/)
   gem.require_paths = ['lib']
 
