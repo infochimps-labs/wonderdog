@@ -1,4 +1,5 @@
-require 'wukong'
+require 'wukong-hadoop'
+
 module Wukong
   
   # Wonderdog provides Java code that couples Hadoop streaming to
@@ -9,5 +10,4 @@ module Wukong
 end
 
 require 'wonderdog/configuration'
-require 'wonderdog/driver'
-
+require 'wonderdog/hadoop_invocation_override'
