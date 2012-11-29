@@ -5,6 +5,7 @@ module Wukong
     # Elasticsearch.
     #
     # @param [Configliere::Param] settings
+    # @return [Configliere::Param] the newly configured settings
     def self.configure settings
       settings.define(:es_tmp_dir,        :description => "Temporary directory on the HDFS to store job files while reading/writing to ElasticSearch", :default => "/user/#{ENV['USER']}/wukong", :wukong_hadoop => true)
       settings.define(:es_config,         :description => "Where to find configuration files detailing how to join an ElasticSearch cluster", :wukong_hadoop => true)
@@ -16,6 +17,8 @@ module Wukong
       settings.define(:es_id_field,       :description => "If this field is present in a record, make an update request, otherwise make a create request", :wukong_hadoop => true)
       settings.define(:es_bulk_size,      :description => "Number of requests to batch locally before making a request to ElasticSearch", :type => Integer, :wukong_hadoop => true)
       settings.define(:es_query,          :description => "Query to use when defining input splits for ElasticSearch input",    :wukong_hadoop => true)
+      
+      settings
     end
   end
   
