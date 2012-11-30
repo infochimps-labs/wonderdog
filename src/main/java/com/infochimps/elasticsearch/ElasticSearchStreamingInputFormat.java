@@ -38,9 +38,9 @@ public class ElasticSearchStreamingInputFormat<K, V> implements InputFormat<K, V
     private static final String ES_DEFAULT_INDEX = "hadoop";
     private              String indexName;
     
-    private static final String ES_TYPE_OPT     = "elasticsearch.input.type";
-    private static final String ES_DEFAULT_TYPE = "streaming_record";
-    private              String typeName;
+    private static final String ES_MAPPING_OPT     = "elasticsearch.input.mapping";
+    private static final String ES_DEFAULT_MAPPING = "streaming_record";
+    private              String mappingName;
 
     private static final String  ES_NUM_SPLITS_OPT = "elasticsearch.input.splits";
     private static final String  ES_NUM_SPLITS     = "1";
@@ -99,12 +99,12 @@ public class ElasticSearchStreamingInputFormat<K, V> implements InputFormat<K, V
     
     private void parseInput(JobConf conf) {
 	this.indexName   = conf.get(ES_INDEX_OPT, ES_DEFAULT_INDEX);
-	this.typeName    = conf.get(ES_TYPE_OPT,  ES_DEFAULT_TYPE);
+	this.mappingName    = conf.get(ES_MAPPING_OPT,  ES_DEFAULT_MAPPING);
         // this.numSplits   = Integer.parseInt(conf.get(ES_NUM_SPLITS_OPT, ES_NUM_SPLITS));
         this.queryJSON   = conf.get(ES_QUERY_OPT, ES_QUERY);
 	String message = "Using input /"+indexName;
-	if (typeName != null && typeName.length() > 0) {
-	    message += "/"+typeName;
+	if (mappingName != null && mappingName.length() > 0) {
+	    message += "/"+mappingName;
 	}
 	if (queryJSON != null && queryJSON.length() > 0) {
 	    message += " with query: "+queryJSON;
@@ -177,8 +177,8 @@ public class ElasticSearchStreamingInputFormat<K, V> implements InputFormat<K, V
 
     private void findNumHits() {
 	SearchRequestBuilder request = client.prepareSearch(indexName);
-	if (typeName != null && typeName.length() > 0) {
-	    request.setTypes(typeName);
+	if (mappingName != null && mappingName.length() > 0) {
+	    request.setTypes(mappingName);
 	}
 	request.setSearchType(SearchType.COUNT);
 	if (queryJSON != null && queryJSON.length() > 0) {
@@ -214,13 +214,13 @@ public class ElasticSearchStreamingInputFormat<K, V> implements InputFormat<K, V
 	// i == 0, 1
         for(int i = 0; i < numSplits; i++) {
 	    Integer from = i * recordsPerSplit;
-            splits.add(new ElasticSearchStreamingSplit(indexName, typeName, numSplits, queryJSON, numHits, from, recordsPerSplit));
+            splits.add(new ElasticSearchStreamingSplit(indexName, mappingName, numSplits, queryJSON, numHits, from, recordsPerSplit));
         }
 	// 7 is > (2 * 3) == 6
         if (numHits > ((long) (numSplits * recordsPerSplit))) {
 	    Integer from = numSplits * recordsPerSplit;
 	    Integer size = (int) (numHits - ((long) from));
-	    splits.add(new ElasticSearchStreamingSplit(indexName, typeName, numSplits, queryJSON, numHits, from, size));
+	    splits.add(new ElasticSearchStreamingSplit(indexName, mappingName, numSplits, queryJSON, numHits, from, size));
 	}
 
 	LOG.info("Splitting "+String.valueOf(numHits)+" hits across "+String.valueOf(splits.size())+" splits ("+String.valueOf(recordsPerSplit)+" hits/split)");

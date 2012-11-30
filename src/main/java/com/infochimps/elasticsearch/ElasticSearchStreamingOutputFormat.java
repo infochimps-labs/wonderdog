@@ -31,17 +31,17 @@ public class ElasticSearchStreamingOutputFormat<K, V> implements OutputFormat<K,
     private static final String ES_DEFAULT_INDEX = "hadoop";
     private              String defaultIndexName;
 	
-    private static final String ES_TYPE_OPT     = "elasticsearch.output.type";
-    private static final String ES_DEFAULT_TYPE = "streaming_record";
-    private              String defaultTypeName;
+    private static final String ES_MAPPING_OPT     = "elasticsearch.output.mapping";
+    private static final String ES_DEFAULT_MAPPING = "streaming_record";
+    private              String defaultMappingName;
 
     private static final String ES_INDEX_FIELD_OPT = "elasticsearch.output.index.field";
     private static final String ES_INDEX_FIELD     = "_index";
     private              String indexFieldName;
 
-    private static final String ES_TYPE_FIELD_OPT = "elasticsearch.output.type.field";
-    private static final String ES_TYPE_FIELD     = "_type";
-    private              String typeFieldName;
+    private static final String ES_MAPPING_FIELD_OPT = "elasticsearch.output.mapping.field";
+    private static final String ES_MAPPING_FIELD     = "_mapping";
+    private              String mappingFieldName;
 	
     private static final String ES_ID_FIELD_OPT = "elasticsearch.output.id.field";
     private static final String ES_ID_FIELD     = "_id";
@@ -62,13 +62,13 @@ public class ElasticSearchStreamingOutputFormat<K, V> implements OutputFormat<K,
     
     public RecordWriter<K, V> getRecordWriter(FileSystem ignored, JobConf conf, String name, Progressable progress) throws IOException {
 	setLocalElasticSearchInstallation(conf);
-	String  defaultIndexName = conf.get(ES_INDEX_OPT,       ES_DEFAULT_INDEX);
-	String  defaultTypeName  = conf.get(ES_TYPE_OPT,        ES_DEFAULT_TYPE);
-	String  indexFieldName   = conf.get(ES_INDEX_FIELD_OPT, ES_INDEX_FIELD);
-	String  typeFieldName    = conf.get(ES_TYPE_FIELD_OPT,  ES_TYPE_FIELD);
-	String  idFieldName      = conf.get(ES_ID_FIELD_OPT,    ES_ID_FIELD);
-	Integer bulkSize         = Integer.parseInt(conf.get(ES_BULK_SIZE_OPT, ES_BULK_SIZE));
-        return (RecordWriter) new ElasticSearchStreamingRecordWriter(defaultIndexName, defaultTypeName, indexFieldName, typeFieldName, idFieldName, bulkSize);
+	String  defaultIndexName   = conf.get(ES_INDEX_OPT,          ES_DEFAULT_INDEX);
+	String  defaultMappingName = conf.get(ES_MAPPING_OPT,        ES_DEFAULT_MAPPING);
+	String  indexFieldName     = conf.get(ES_INDEX_FIELD_OPT,    ES_INDEX_FIELD);
+	String  mappingFieldName   = conf.get(ES_MAPPING_FIELD_OPT,  ES_MAPPING_FIELD);
+	String  idFieldName        = conf.get(ES_ID_FIELD_OPT,       ES_ID_FIELD);
+	Integer bulkSize           = Integer.parseInt(conf.get(ES_BULK_SIZE_OPT, ES_BULK_SIZE));
+        return (RecordWriter) new ElasticSearchStreamingRecordWriter(defaultIndexName, defaultMappingName, indexFieldName, mappingFieldName, idFieldName, bulkSize);
     }
     
     public void setLocalElasticSearchInstallation(JobConf conf) {

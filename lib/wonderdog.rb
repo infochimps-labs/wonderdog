@@ -11,3 +11,4 @@ end
 
 require 'wonderdog/configuration'
 require 'wonderdog/hadoop_invocation_override'
+require 'wonderdog/timestamp'

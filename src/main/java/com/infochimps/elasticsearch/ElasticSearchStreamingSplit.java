@@ -18,7 +18,7 @@ import org.elasticsearch.action.search.SearchType;
 public class ElasticSearchStreamingSplit  implements InputSplit, Writable {
 
     private String  indexName;
-    private String  typeName;
+    private String  mappingName;
     private Integer numSplits;
     private String  queryJSON;
     private Long    numHits;
@@ -28,9 +28,9 @@ public class ElasticSearchStreamingSplit  implements InputSplit, Writable {
     public ElasticSearchStreamingSplit() {
     }
 
-    public ElasticSearchStreamingSplit(String indexName , String typeName, Integer numSplits, String queryJSON, Long numHits, Integer from, Integer size) {
+    public ElasticSearchStreamingSplit(String indexName , String mappingName, Integer numSplits, String queryJSON, Long numHits, Integer from, Integer size) {
 	this.indexName   = indexName;
-	this.typeName    = typeName;
+	this.mappingName = mappingName;
 	this.numSplits   = numSplits;
 	this.queryJSON   = queryJSON;
 	this.numHits     = numHits;
@@ -40,7 +40,7 @@ public class ElasticSearchStreamingSplit  implements InputSplit, Writable {
 
     public String getSummary() {
 	Integer thisSplitNum  = (int) (((long) from) / (numHits / ((long) numSplits)));
-	return "ElasticSearch input split "+String.valueOf(thisSplitNum + 1)+"/"+String.valueOf(numSplits)+" with "+String.valueOf(size)+" records from /"+indexName+"/"+typeName;
+	return "ElasticSearch input split "+String.valueOf(thisSplitNum + 1)+"/"+String.valueOf(numSplits)+" with "+String.valueOf(size)+" records from /"+indexName+"/"+mappingName;
     }
 
     public Integer getSize() {
@@ -53,8 +53,8 @@ public class ElasticSearchStreamingSplit  implements InputSplit, Writable {
 
     public SearchRequestBuilder initialScrollRequest(Client client, Scroll scroll, Integer requestSize) {
 	SearchRequestBuilder request = client.prepareSearch(indexName).setSearchType(SearchType.SCAN).setScroll(scroll);
-	if (typeName != null && typeName.length() > 0) {
-	    request.setTypes(typeName);
+	if (mappingName != null && mappingName.length() > 0) {
+	    request.setTypes(mappingName);
 	}
 	request.setFrom((int) from);
 	request.setSize(requestSize);
@@ -80,19 +80,19 @@ public class ElasticSearchStreamingSplit  implements InputSplit, Writable {
 
     @Override
     public void readFields(DataInput in) throws IOException {
-	this.indexName = Text.readString(in);
-	this.typeName  = Text.readString(in);
-	this.numSplits = in.readInt();
-	this.queryJSON = Text.readString(in);
-	this.numHits   = in.readLong();
-	this.from      = in.readInt();
-	this.size      = in.readInt();
+	this.indexName   = Text.readString(in);
+	this.mappingName = Text.readString(in);
+	this.numSplits   = in.readInt();
+	this.queryJSON   = Text.readString(in);
+	this.numHits     = in.readLong();
+	this.from        = in.readInt();
+	this.size        = in.readInt();
     }
 
     @Override
     public void write(DataOutput out) throws IOException {
 	Text.writeString(out, indexName);
-	Text.writeString(out, typeName);
+	Text.writeString(out, mappingName);
 	out.writeInt(numSplits);
 	Text.writeString(out, queryJSON);
 	out.writeLong(numHits);

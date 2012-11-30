@@ -32,9 +32,9 @@ class ElasticSearchStreamingRecordWriter<K, V> implements RecordWriter<K, V> {
     static Log LOG = LogFactory.getLog(ElasticSearchStreamingRecordWriter.class);
 
     private String  defaultIndexName;
-    private String  defaultTypeName;
+    private String  defaultMappingName;
     private String  indexFieldName;
-    private String  typeFieldName;
+    private String  mappingFieldName;
     private String  idFieldName;
     private Integer bulkSize;
 
@@ -56,17 +56,17 @@ class ElasticSearchStreamingRecordWriter<K, V> implements RecordWriter<K, V> {
     // == Lifecycle ==
     // 
 
-    public ElasticSearchStreamingRecordWriter(String defaultIndexName, String defaultTypeName, String indexFieldName, String typeFieldName, String idFieldName, Integer bulkSize) {
+    public ElasticSearchStreamingRecordWriter(String defaultIndexName, String defaultMappingName, String indexFieldName, String mappingFieldName, String idFieldName, Integer bulkSize) {
 	this.defaultIndexName = defaultIndexName;
-	this.defaultTypeName  = defaultTypeName;
+	this.defaultMappingName  = defaultMappingName;
 	this.indexFieldName   = indexFieldName;
-	this.typeFieldName    = typeFieldName;
+	this.mappingFieldName    = mappingFieldName;
 	this.idFieldName      = idFieldName;
 	this.bulkSize         = bulkSize;
 	
 	LOG.info("Writing "+Integer.toString(bulkSize)+" records per batch");
-	LOG.info("Using default target /"+defaultIndexName+"/"+defaultTypeName);
-	LOG.info("Records override default target with index field '"+indexFieldName+"', type field '"+typeFieldName+"', and ID field '"+idFieldName);
+	LOG.info("Using default target /"+defaultIndexName+"/"+defaultMappingName);
+	LOG.info("Records override default target with index field '"+indexFieldName+"', mapping field '"+mappingFieldName+"', and ID field '"+idFieldName);
             
 	startEmbeddedClient();
 	this.currentRequest = client.prepareBulk();
@@ -124,9 +124,9 @@ class ElasticSearchStreamingRecordWriter<K, V> implements RecordWriter<K, V> {
 	Map<String, Object> record = mapper.readValue(json, Map.class);
 	if (record.containsKey(idFieldName)) {
 	    Object idValue = record.get(idFieldName);
-	    currentRequest.add(Requests.indexRequest(indexNameForRecord(record)).id(String.valueOf(idValue)).type(typeNameForRecord(record)).create(false).source(json));
+	    currentRequest.add(Requests.indexRequest(indexNameForRecord(record)).id(String.valueOf(idValue)).type(mappingNameForRecord(record)).create(false).source(json));
 	} else {
-	    currentRequest.add(Requests.indexRequest(indexNameForRecord(record)).type(typeNameForRecord(record)).source(json));
+	    currentRequest.add(Requests.indexRequest(indexNameForRecord(record)).type(mappingNameForRecord(record)).source(json));
 	}
     }
 
@@ -139,12 +139,12 @@ class ElasticSearchStreamingRecordWriter<K, V> implements RecordWriter<K, V> {
 	}
     }
 
-    private String typeNameForRecord(Map<String, Object> record) {
-	if (record.containsKey(typeFieldName)) {
-	    Object typeValue   = record.get(typeFieldName);
-	    return String.valueOf(typeValue);
+    private String mappingNameForRecord(Map<String, Object> record) {
+	if (record.containsKey(mappingFieldName)) {
+	    Object mappingValue   = record.get(mappingFieldName);
+	    return String.valueOf(mappingValue);
 	} else {
-	    return defaultTypeName;
+	    return defaultMappingName;
 	}
     }
 

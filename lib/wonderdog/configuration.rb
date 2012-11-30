@@ -13,7 +13,7 @@ module Wukong
       settings.define(:es_request_size,   :description => "Number of objects requested during each batch read from ElasticSearch", :type => Integer, :wukong_hadoop => true)
       settings.define(:es_scroll_timeout, :description => "Amount of time to wait on a scroll", :wukong_hadoop => true)
       settings.define(:es_index_field,    :description => "Field to use from each record to override the default index", :wukong_hadoop => true)
-      settings.define(:es_type_field,     :description => "Field to use from each record to override the default type", :wukong_hadoop => true)
+      settings.define(:es_mapping_field,  :description => "Field to use from each record to override the default mapping", :wukong_hadoop => true)
       settings.define(:es_id_field,       :description => "If this field is present in a record, make an update request, otherwise make a create request", :wukong_hadoop => true)
       settings.define(:es_bulk_size,      :description => "Number of requests to batch locally before making a request to ElasticSearch", :type => Integer, :wukong_hadoop => true)
       settings.define(:es_query,          :description => "Query to use when defining input splits for ElasticSearch input",    :wukong_hadoop => true)
