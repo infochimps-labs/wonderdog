@@ -1,4 +1,4 @@
-require_relative("index_and_type")
+require_relative("index_and_mapping")
 
 module Wukong
   module Elasticsearch
@@ -26,7 +26,7 @@ module Wukong
       #
       # @return [true, false]
       def reads_from_elasticsearch?
-        IndexAndType.matches?(settings[:input])
+        IndexAndMapping.matches?(settings[:input])
       end
 
       # The input format to use for this job.
@@ -41,9 +41,9 @@ module Wukong
 
       # The input index to use.
       #
-      # @return [IndexAndType]
+      # @return [IndexAndMapping]
       def input_index
-        @input_index ||= IndexAndType.new(settings[:input])
+        @input_index ||= IndexAndMapping.new(settings[:input])
       end
 
       # The input paths to use for this job.
@@ -60,7 +60,7 @@ module Wukong
       #
       # @return [true, false]
       def writes_to_elasticsearch?
-        IndexAndType.matches?(settings[:output])
+        IndexAndMapping.matches?(settings[:output])
       end
 
       # The output format to use for this job.
@@ -75,9 +75,9 @@ module Wukong
 
       # The output index to use.
       #
-      # @return [IndexAndType]
+      # @return [IndexAndMapping]
       def output_index
-        @output_index ||= IndexAndType.new(settings[:output])
+        @output_index ||= IndexAndMapping.new(settings[:output])
       end
 
       # The output path to use for this job.
@@ -103,7 +103,7 @@ module Wukong
           
           if reads_from_elasticsearch?
             o << java_opt('elasticsearch.input.index',          input_index.index)
-            o << java_opt('elasticsearch.input.type',           input_index.type)
+            o << java_opt('elasticsearch.input.mapping',        input_index.mapping)
             o << java_opt('elasticsearch.input.splits',         settings[:es_input_splits])
             o << java_opt('elasticsearch.input.query',          settings[:es_query])
             o << java_opt('elasticsearch.input.request_size',   settings[:es_request_size])
@@ -111,12 +111,12 @@ module Wukong
           end
 
           if writes_to_elasticsearch?
-            o << java_opt('elasticsearch.output.index',       output_index.index)
-            o << java_opt('elasticsearch.output.type',        output_index.type)
-            o << java_opt('elasticsearch.output.index.field', settings[:es_index_field])
-            o << java_opt('elasticsearch.output.type.field',  settings[:es_type_field])
-            o << java_opt('elasticsearch.output.id.field',    settings[:es_id_field])
-            o << java_opt('elasticsearch.output.bulk_size',   settings[:es_bulk_size])
+            o << java_opt('elasticsearch.output.index',         output_index.index)
+            o << java_opt('elasticsearch.output.mapping',       output_index.mapping)
+            o << java_opt('elasticsearch.output.index.field',   settings[:es_index_field])
+            o << java_opt('elasticsearch.output.mapping.field', settings[:es_mapping_field])
+            o << java_opt('elasticsearch.output.id.field',      settings[:es_id_field])
+            o << java_opt('elasticsearch.output.bulk_size',     settings[:es_bulk_size])
           end
         end.flatten.compact
       end
@@ -124,11 +124,11 @@ module Wukong
       # Returns a temporary path on the HDFS in which to store log
       # data while the Hadoop job runs.
       #
-      # @param [IndexAndType] io
+      # @param [IndexAndMapping] io
       # @return [String]
       def elasticsearch_hdfs_tmp_dir io
         cleaner  = %r{[^\w/\.\-\+]+}
-        io_part  = [io.index, io.type].compact.map { |s| s.gsub(cleaner, '') }.join('/')
+        io_part  = [io.index, io.mapping].compact.map { |s| s.gsub(cleaner, '') }.join('/')
         File.join(settings[:es_tmp_dir], io_part, Time.now.strftime("%Y-%m-%d-%H-%M-%S"))
       end
 
