@@ -31,10 +31,12 @@ module Wukong
         new(t.year, t.month, t.day, t.hour, t.min, t.sec, t.utc_offset)
       end
 
-      # Formats the Timestamp according to 
-      # 
+      # Formats the Timestamp according to ISO 8601 rules.
+      #
+      # @param [Hash] options
+      # @return [String]
       def to_wire(options={})
-        utc.strftime("%Y-%m-%dT%H:%M:%S")
+        utc.iso8601
       end
     end
   end
