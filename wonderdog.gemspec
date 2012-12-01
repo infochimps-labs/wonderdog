@@ -28,5 +28,5 @@ EOF
   gem.test_files    = gem.files.grep(/^spec/)
   gem.require_paths = ['lib']
 
-  gem.add_dependency('configliere', '~> 0.4')
+  gem.add_dependency('wukong', '3.0.0.pre2')
 end
