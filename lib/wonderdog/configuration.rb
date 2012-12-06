@@ -8,6 +8,7 @@ module Wukong
     # @return [Configliere::Param] the newly configured settings
     def self.configure settings
       settings.define(:es_tmp_dir,        :description => "Temporary directory on the HDFS to store job files while reading/writing to ElasticSearch", :default => "/user/#{ENV['USER']}/wukong", :wukong_hadoop => true)
+      settings.define(:es_lib_dir,        :description => "Directory containing Elasticsearch, Wonderdog, and other support jars", :default => "/usr/lib/hadoop/lib", :wukong_hadoop => true)
       settings.define(:es_config,         :description => "Where to find configuration files detailing how to join an ElasticSearch cluster", :wukong_hadoop => true)
       settings.define(:es_input_splits,   :description => "Number of input splits to target when reading from ElasticSearch", :type => Integer, :wukong_hadoop => true)
       settings.define(:es_request_size,   :description => "Number of objects requested during each batch read from ElasticSearch", :type => Integer, :wukong_hadoop => true)
