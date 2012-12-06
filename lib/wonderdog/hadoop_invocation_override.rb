@@ -121,6 +121,28 @@ module Wukong
         end.flatten.compact
       end
 
+      # :nodoc:
+      #
+      # Munge the settings object to add necessary jars if
+      # reading/writing to/from Elasticsearch, then call super().
+      def hadoop_files
+        if reads_from_elasticsearch? || writes_to_elasticsearch?
+          settings[:jars] = elasticsearch_jars if settings[:jars].empty?
+        end
+        super()
+      end
+
+      # All Elasticsearch, Wonderdog, and other support jars needed to
+      # connect Hadoop streaming with the
+      # ElasticSearchStreamingInputFormat and
+      # ElasticSearchStreamingOutputFormat provided by the Wonderdog
+      # Java code.
+      #
+      # @return [Array<String>]
+      def elasticsearch_jars
+        Dir[File.join(settings[:es_lib_dir] || '/usr/lib/hadoop/lib', '{elasticsearch,lucene,jna,wonderdog}*.jar')].compact.uniq
+      end
+
       # Returns a temporary path on the HDFS in which to store log
       # data while the Hadoop job runs.
       #
@@ -129,7 +151,7 @@ module Wukong
       def elasticsearch_hdfs_tmp_dir io
         cleaner  = %r{[^\w/\.\-\+]+}
         io_part  = [io.index, io.mapping].compact.map { |s| s.gsub(cleaner, '') }.join('/')
-        File.join(settings[:es_tmp_dir], io_part, Time.now.strftime("%Y-%m-%d-%H-%M-%S"))
+        File.join(settings[:es_tmp_dir] || '/', io_part || '', Time.now.strftime("%Y-%m-%d-%H-%M-%S"))
       end
 
     end
