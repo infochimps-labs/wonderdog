@@ -48,7 +48,7 @@ public class ElasticSearchStreamingOutputFormat<K, V> implements OutputFormat<K,
     private              String idFieldName;
 	
     private static final String ES_BULK_SIZE_OPT     = "elasticsearch.output.bulk_size";
-    private static final String ES_BULK_SIZE         = "100";
+    private static final String ES_BULK_SIZE         = "1000";
     private              int    bulkSize;
 
 
