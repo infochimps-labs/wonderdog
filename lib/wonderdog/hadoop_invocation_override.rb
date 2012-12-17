@@ -98,8 +98,15 @@ module Wukong
       #
       # @return [Array<String>]
       def hadoop_jobconf_options
+        if reads_from_elasticsearch? || writes_to_elasticsearch?
+          settings[:map_speculative]    = false if settings[:map_speculative].nil?
+          settings[:reduce_speculative] = false if settings[:reduce_speculative].nil?
+        end
+        
         super() + [].tap do |o|
-          o << java_opt('es.config', settings[:es_config]) if (reads_from_elasticsearch? || writes_to_elasticsearch?)
+          if (reads_from_elasticsearch? || writes_to_elasticsearch?)
+            o << java_opt('es.config', settings[:es_config])
+          end
           
           if reads_from_elasticsearch?
             o << java_opt('elasticsearch.input.index',          input_index.index)
