@@ -1,3 +1,4 @@
 module Wonderdog
-  VERSION = '0.0.1'
+  # The currently running Wonderdog version
+  VERSION = '0.0.2'
 end

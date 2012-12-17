@@ -32,6 +32,22 @@ describe Wukong::Elasticsearch::HadoopInvocationOverride do
       end
     end
   end
+
+  context "setting speculative execution" do
+    context "when not given speculative options" do
+      context "and not interacting with Elasticsearch" do
+        it "doesn't add jars" do
+          no_es.hadoop_commandline.should_not match('speculative')
+        end
+      end
+      context "and reading from Elasticsearch" do
+        it "adds default jars it finds on the local filesystem" do
+          es_reader.hadoop_commandline.should match('-mapred.map.tasks.speculative.execution.*false')
+          es_reader.hadoop_commandline.should match('-mapred.reduce.tasks.speculative.execution.*false')
+        end
+      end
+    end
+  end
   
   context "handling input and output paths, formats, and options when" do
 
