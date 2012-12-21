@@ -99,8 +99,8 @@ module Wukong
       # @return [Array<String>]
       def hadoop_jobconf_options
         if reads_from_elasticsearch? || writes_to_elasticsearch?
-          settings[:map_speculative]    = false if settings[:map_speculative].nil?
-          settings[:reduce_speculative] = false if settings[:reduce_speculative].nil?
+          settings[:map_speculative]    = 'false' if settings[:map_speculative].nil?
+          settings[:reduce_speculative] = 'false' if settings[:reduce_speculative].nil?
         end
         
         super() + [].tap do |o|
@@ -164,5 +164,5 @@ module Wukong
     end
   end
 
-  Hadoop::Driver.class_eval { include Elasticsearch::HadoopInvocationOverride }
+  Hadoop::HadoopRunner.class_eval { include Elasticsearch::HadoopInvocationOverride }
 end

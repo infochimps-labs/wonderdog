@@ -26,7 +26,7 @@ module Wukong
       # @param [String]
       attr_reader :mapping
 
-      # Does the given +string+ look like a possible Elasticsearch
+      # Does the given `string` look like a possible Elasticsearch
       # /index/mapping specification?
       #
       # @param [String] string

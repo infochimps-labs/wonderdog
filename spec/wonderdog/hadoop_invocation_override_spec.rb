@@ -2,10 +2,10 @@ require 'spec_helper'
 
 describe Wukong::Elasticsearch::HadoopInvocationOverride do
 
-  let(:no_es)      { driver('regexp',  'count', input: '/tmp/input_file',        output: '/tmp/output_file')         }
-  let(:es_reader)  { driver('regexp',  'count', input: 'es://the_index/the_map', output: '/tmp/output_file')         }
-  let(:es_writer)  { driver('regexp',  'count', input: '/tmp/input_file',        output: 'es:///the_index/the_map')  }
-  let(:es_complex) { driver('regexp',  'count', input: 'es://the_index/the_map', output: 'es:///the_index/the_map', es_query: '{"hi": "there"}', es_request_size: 1000, es_index_field: 'ID') }
+  let(:no_es)      { hadoop_runner('regexp',  'count', input: '/tmp/input_file',        output: '/tmp/output_file')         }
+  let(:es_reader)  { hadoop_runner('regexp',  'count', input: 'es://the_index/the_map', output: '/tmp/output_file')         }
+  let(:es_writer)  { hadoop_runner('regexp',  'count', input: '/tmp/input_file',        output: 'es:///the_index/the_map')  }
+  let(:es_complex) { hadoop_runner('regexp',  'count', input: 'es://the_index/the_map', output: 'es:///the_index/the_map', es_query: '{"hi": "there"}', es_request_size: 1000, es_index_field: 'ID', map_speculative: true, reduce_speculative: true) }
 
   context "passing necessary jars to Hadoop streaming" do
     before  { Dir.stub!(:[]).and_return(["/lib/dir/elasticsearch.jar"], ["/lib/dir/wonderdog.jar"]) }
@@ -36,15 +36,31 @@ describe Wukong::Elasticsearch::HadoopInvocationOverride do
   context "setting speculative execution" do
     context "when not given speculative options" do
       context "and not interacting with Elasticsearch" do
-        it "doesn't add jars" do
+        it "doesn't add any speculative options" do
           no_es.hadoop_commandline.should_not match('speculative')
         end
       end
       context "and reading from Elasticsearch" do
-        it "adds default jars it finds on the local filesystem" do
-          es_reader.hadoop_commandline.should match('-mapred.map.tasks.speculative.execution.*false')
-          es_reader.hadoop_commandline.should match('-mapred.reduce.tasks.speculative.execution.*false')
+        it "disables speculative execution in the mapper" do
+          es_reader.hadoop_commandline.should match(/-D mapred.map.tasks.speculative.execution.*false/)
         end
+        it "disables speculative execution in the reducer" do
+          es_reader.hadoop_commandline.should match(/-D mapred.reduce.tasks.speculative.execution.*false/)
+        end
+      end
+      context "and reading from Elasticsearch" do
+        it "disables speculative execution in the mapper" do
+          es_writer.hadoop_commandline.should match(/-D mapred.map.tasks.speculative.execution.*false/)
+        end
+        it "disables speculative execution in the reducer" do
+          es_writer.hadoop_commandline.should match(/-D mapred.reduce.tasks.speculative.execution.*false/)
+        end
+      end
+    end
+    context "when given speculative options" do
+      it "does not change them" do
+        es_complex.hadoop_commandline.should match(/-D mapred.map.tasks.speculative.execution.*true/)
+        es_complex.hadoop_commandline.should match(/-D mapred.reduce.tasks.speculative.execution.*true/)
       end
     end
   end
