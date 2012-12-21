@@ -1,12 +1,10 @@
 require 'wonderdog'
 require 'wukong/spec_helpers'
-require_relative('support/integration_helper')
-require_relative('support/driver_helper')
-
 
 RSpec.configure do |config|
 
   config.before(:each) do
+    Wukong::Log.level = Log4r::OFF
     @orig_reg = Wukong.registry.show
   end
 
@@ -14,9 +12,18 @@ RSpec.configure do |config|
     Wukong.registry.clear!
     Wukong.registry.merge!(@orig_reg)
   end
-    
-  include Wukong::SpecHelpers
-  include Wukong::Elasticsearch::IntegrationHelper
-  include Wukong::Elasticsearch::DriverHelper
-end
 
+  include Wukong::SpecHelpers
+  
+  def root
+    @root ||= Pathname.new(File.expand_path('../..', __FILE__))
+  end
+
+  def hadoop_runner *args, &block
+    runner(Wukong::Hadoop::HadoopRunner, *args) do
+      stub!(:execute_command!)
+      instance_eval(&block) if block_given?
+    end
+  end
+  
+end
