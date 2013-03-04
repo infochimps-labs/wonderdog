@@ -35,6 +35,7 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     protected ObjectMapper mapper = new ObjectMapper();
     protected String esConfig;
     protected String esPlugins;
+    protected String transportAddresses;
 
     // For hadoop configuration
     private static final String ES_INDEX_NAME = "elasticsearch.index.name";
@@ -47,6 +48,7 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     private static final String ES_NUM_SPLITS = "elasticsearch.num.input.splits";
     private static final String ES_QUERY_STRING = "elasticsearch.query.string";
     private static final String ES_CLIENT_TYPE = "elasticsearch.client.type";
+    private static final String ES_TRANS_ADDR = "elasticsearch.client.transport.addresses";
     
     private static final String COMMA = ",";
     private static final String LOCAL_SCHEME = "file://";
@@ -69,6 +71,11 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     public ElasticSearchStorage(String esConfig, String esPlugins) {
         this.esConfig  = esConfig;
         this.esPlugins = esPlugins;
+    }
+
+    public ElasticSearchStorage(String esConfig, String esPlugins, String addresses) {
+        this(esConfig, esPlugins);
+        this.transportAddresses = addresses;
     }
 
     @Override
@@ -241,6 +248,8 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
                 String clientType = query.get("client");
                 if (clientType==null) clientType = "node";
                 job.getConfiguration().set(ES_CLIENT_TYPE, clientType);
+
+                if(this.transportAddresses != null) job.getConfiguration().set(ES_TRANS_ADDR, transportAddresses);
 
                 String numTasks = query.get("tasks");
                 if (numTasks==null) numTasks = "100";

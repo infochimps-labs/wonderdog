@@ -8,13 +8,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.elasticsearch.ExceptionsHelper;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
-import org.elasticsearch.client.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
@@ -22,6 +23,7 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,12 +53,13 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private String idFieldName;
         private String objType;
         private ClientType clientType;
+        private String[] transportAddr;
         private String[] fieldNames;
-        
+
         // Used for bookkeeping purposes
         private AtomicLong totalBulkTime  = new AtomicLong();
         private AtomicLong totalBulkItems = new AtomicLong();
-        private Random     randgen        = new Random();        
+        private Random     randgen        = new Random();
         private long       runStartTime   = System.currentTimeMillis();
 
         // For hadoop configuration
@@ -67,6 +70,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private static final String ES_ID_FIELD_NAME = "elasticsearch.id.field.name";
         private static final String ES_ID_FIELD = "elasticsearch.id.field";
         private static final String ES_CLIENT_TYPE = "elasticsearch.client.type";
+        private static final String ES_TRANS_ADDR = "elasticsearch.client.transport.addresses";
         private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
         private static final String ES_CONFIG = "es.config";
         private static final String ES_PLUGINS = "es.path.plugins";
@@ -75,7 +79,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private static final String COMMA = ",";
         private static final String SLASH = "/";
         private static final String NO_ID_FIELD = "-1";
-        
+
         private volatile BulkRequestBuilder currentRequest;
 
         /**
@@ -98,7 +102,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
            <li><b>elasticsearch.id.field.name</b> - When <b>elasticsearch.is_json</b> is true, this is the name of a field in the json document that contains the document's id. If -1 is used then the document is assumed to have no id and one is assigned to it by elasticsearch.</li>
            <li><b>elasticsearch.field.names</b> - When <b>elasticsearch.is_json</b> is false, this is a comma separated list of field names.</li>
            <li><b>elasticsearch.id.field</b> - When <b>elasticsearch.is_json</b> is false, this is the numeric index of the field to use as the document id. If -1 is used the document is assumed to have no id and one is assigned to it by elasticsearch.</li>
-           </ul>           
+           </ul>
          */
         public ElasticSearchRecordWriter(TaskAttemptContext context) {
             Configuration conf = context.getConfiguration();
@@ -112,8 +116,15 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 LOG.info("Using field:["+idFieldName+"] for document ids");
             }
             this.objType    = conf.get(ES_OBJECT_TYPE);
-            if("transport".equals(conf.get(ES_CLIENT_TYPE))) {
+            if(ClientType.TRANSPORT.name().equalsIgnoreCase(conf.get(ES_CLIENT_TYPE))) {
                 this.clientType = ClientType.TRANSPORT;
+                // Get the address
+                if(conf.get(ES_TRANS_ADDR) == null) {
+                    LOG.error("Transport client must have nodes addresses.");
+                    throw new RuntimeException("Transport client must have nodes addresses.");
+                } else {
+                    this.transportAddr = conf.get(ES_TRANS_ADDR).split(",");
+                }
             } else {
                 this.clientType = ClientType.NODE;
             }
@@ -133,7 +144,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 System.setProperty(ES_CONFIG,conf.get(ES_CONFIG));
                 System.setProperty(ES_PLUGINS,conf.get(ES_PLUGINS));
             }
-            
+
             start_embedded_client();
             initialize_index(indexName);
             currentRequest = client.prepareBulk();
@@ -143,7 +154,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
            Closes the connection to elasticsearch. Any documents remaining in the bulkRequest object are indexed.
          */
         public void close(TaskAttemptContext context) throws IOException {
-            if (currentRequest.numberOfActions() > 0) {            
+            if (currentRequest.numberOfActions() > 0) {
                 try {
                     BulkResponse response = currentRequest.execute().actionGet();
                 } catch (Exception e) {
@@ -174,7 +185,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 try {
                     Text mapKey = new Text(idFieldName);
                     String record_id = fields.get(mapKey).toString();
-                    currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));                    
+                    currentRequest.add(Requests.indexRequest(indexName).id(record_id).type(objType).create(false).source(builder));
                 } catch (Exception e) {
                     LOG.warn("Encountered malformed record");
                 }
@@ -197,14 +208,14 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             } else if (value instanceof FloatWritable) {
                 builder.value(((FloatWritable)value).get());
             } else if (value instanceof BooleanWritable) {
-                builder.value(((BooleanWritable)value).get());                
+                builder.value(((BooleanWritable)value).get());
             } else if (value instanceof MapWritable) {
                 builder.startObject();
                 for (Map.Entry<Writable,Writable> entry : ((MapWritable)value).entrySet()) {
                     if (!(entry.getValue() instanceof NullWritable)) {
                         builder.field(entry.getKey().toString());
                         buildContent(builder, entry.getValue());
-                    }                    
+                    }
                 }
                 builder.endObject();
             } else if (value instanceof ArrayWritable) {
@@ -214,7 +225,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                     buildContent(builder, arrayOfThings[i]);
                 }
                 builder.endArray();
-            } 
+            }
         }
 
         /**
@@ -253,14 +264,23 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         // Starts an embedded elasticsearch client (ie. data = false)
         //
         private void start_embedded_client() {
-            LOG.info("Starting embedded elasticsearch client ...");
+            LOG.info("Starting embedded elasticsearch [" + clientType.toString() + "] client ...");
             switch (clientType) {
                 case TRANSPORT:
                     // We don't want to sniff to avoid Too many files open
                     // So it is going to take only the node in configuration
                     Settings settings = ImmutableSettings.settingsBuilder()
                             .put("client.transport.sniff", "false").build();
-                    this.client = new TransportClient(settings);
+
+                    TransportClient transport = new TransportClient(settings);
+                    for(String addr : transportAddr) {
+                        String[] sockAddr = addr.split(":");
+                        transport.addTransportAddress(
+                                new InetSocketTransportAddress(
+                                        new InetSocketAddress(sockAddr[0], Integer.parseInt(sockAddr[1]))));
+                    }
+
+                    this.client = transport;
                     break;
                 case NODE:
                 default:
