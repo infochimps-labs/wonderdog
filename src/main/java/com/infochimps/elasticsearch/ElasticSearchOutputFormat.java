@@ -27,18 +27,18 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
-   
+
    Hadoop OutputFormat for writing arbitrary MapWritables (essentially HashMaps) into Elasticsearch. Records are batched up and sent
    in a one-hop manner to the elastic search data nodes that will index them.
-   
+
  */
 public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWritable> implements Configurable {
-    
+
     static Log LOG = LogFactory.getLog(ElasticSearchOutputFormat.class);
     private Configuration conf = null;
 
     enum ClientType {
-        CLIENT, TRANSPORT
+        NODE, TRANSPORT
     }
 
     protected class ElasticSearchRecordWriter extends RecordWriter<NullWritable, MapWritable> {
@@ -88,7 +88,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
            <li><b>elasticsearch.bulk.size</b> - The number of records to be accumulated into a bulk request before writing to elasticsearch.</li>
            <li><b>elasticsearch.is_json</b> - A boolean indicating whether the records to be indexed are json records. If false the records are assumed to be tsv, in which case <b>elasticsearch.field.names</b> must be set and contain a comma separated list of field names</li>
            <li><b>elasticsearch.object.type</b> - The type of objects being indexed</li>
-           <li><b>elasticsearch.client.type</b> - The type of client to be used for indexation. (client or transport). Default to client.</li>
+           <li><b>elasticsearch.client.type</b> - The type of client to be used for indexation. (node or transport). Default to node.</li>
            <li><b>elasticsearch.config</b> - The full path the elasticsearch.yml. It is a local path and must exist on all machines in the hadoop cluster.</li>
            <li><b>elasticsearch.plugins.dir</b> - The full path the elasticsearch plugins directory. It is a local path and must exist on all machines in the hadoop cluster.</li>
            </ul>
@@ -115,7 +115,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
             if("transport".equals(conf.get(ES_CLIENT_TYPE))) {
                 this.clientType = ClientType.TRANSPORT;
             } else {
-                this.clientType = ClientType.CLIENT;
+                this.clientType = ClientType.NODE;
             }
 
             //
@@ -262,7 +262,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                             .put("client.transport.sniff", "false").build();
                     this.client = new TransportClient(settings);
                     break;
-                case CLIENT:
+                case NODE:
                 default:
                     this.node   = NodeBuilder.nodeBuilder().client(true).node();
                     this.client = node.client();

@@ -64,6 +64,7 @@ There are a few query paramaters available:
 * ```q``` - (LOAD only) A free text query determining which records to load. If empty, matches all documents in the index.
 * ```id``` - (STORE only) The name of the field to use as a document id. If blank (or -1) the documents are assumed to have no id and are assigned one by elasticsearch.
 * ```tasks``` - (LOAD only) The number of map tasks to launch. Default 100.
+* ```client``` - (STORE ony) The type of client to be used. This setting can be useful to avoid "too many open files" on hadoop workers, since "client.transport.sniff" is set to false which mean it will only takes the nodes specified in config file. take Default to Node.
 
 Note that elasticsearch.yml and the plugins directory are distributed to every machine in the cluster automatically via hadoop's distributed cache mechanism.
 

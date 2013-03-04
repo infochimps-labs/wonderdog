@@ -239,7 +239,7 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
 
                 // Set elasticsearch client type to be used in the Hadoop configuration
                 String clientType = query.get("client");
-                if (clientType==null) clientType = "client";
+                if (clientType==null) clientType = "node";
                 job.getConfiguration().set(ES_CLIENT_TYPE, clientType);
 
                 String numTasks = query.get("tasks");
