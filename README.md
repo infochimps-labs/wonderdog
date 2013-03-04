@@ -172,3 +172,46 @@ bin/estool snapshot -c <elasticsearch_host> --index <index_name>
 ```
 bin/estool delete -c <elasticsearch_host> --index <index_name>
 ```
+
+
+## Bulk Loading Tips for the Risk-seeking Dangermouse
+
+The file examples/bulkload_pageviews.pig shows an example of bulk loading elasticsearch, including preparing the index.
+
+### Elasticsearch Setup
+
+Some tips for an industrial-strength cluster, assuming exclusive use of machines and no read load during the job:
+
+* use multiple machines with a fair bit of ram (7+GB). Heap doesn't help too much for loading though, so you don't have to go nuts: we do fine with amazon m1.large's.
+* Allocate a sizeable heap, setting min and max equal, and 
+  - turn `bootstrap.mlockall` on, and run `ulimit -l unlimited`. 
+  - For example, for a 3GB heap: `-Xmx3000m -Xms3000m -Delasticsearch.bootstrap.mlockall=true`
+  - Never use a heap above 12GB or so, it's dangerous (STW compaction timeouts).
+  - You've succeeded if the full heap size is resident on startup: that is, in htop both the VMEM and RSS are 3000 MB or so.
+* temporarily increase the `index_buffer_size`, to say 40%.
+
+### Temporary Bulk-load settings for an index
+
+To prepare a database for bulk loading, the following settings may help. They are
+*EXTREMELY* aggressive, and include knocking the replication factor back to 1 (zero replicas). One
+false step and you've destroyed Tokyo. 
+
+Actually, you know what?  Never mind.  Don't apply these, they're too crazy.
+
+    curl -XPUT 'localhost:9200/wikistats/_settings?pretty=true'  -d '{"index": {
+      "number_of_replicas": 0, "refresh_interval": -1, "gateway.snapshot_interval": -1,
+      "translog":     { "flush_threshold_ops": 50000, "flush_threshold_size": "200mb", "flush_threshold_period": "300s" },
+      "merge.policy": { "max_merge_at_once": 30, "segments_per_tier": 30, "floor_segment": "10mb" },
+      "store.compress": { "stored": true, "tv": true } } }'
+
+To restore your settings, in case you didn't destroy Tokyo:
+
+    curl -XPUT 'localhost:9200/wikistats/_settings?pretty=true'  -d ' {"index": {
+      "number_of_replicas": 2, "refresh_interval": "60s", "gateway.snapshot_interval": "3600s",
+      "translog": { "flush_threshold_ops": 5000, "flush_threshold_size": "200mb", "flush_threshold_period": "300s" },
+      "merge.policy": { "max_merge_at_once": 10, "segments_per_tier": 10, "floor_segment": "10mb" },
+      "store.compress": { "stored": true, "tv": true } } }'
+
+If you did destroy your database, please send your resume to jobs@infochimps.com as you begin your
+job hunt. It's the reformed sinner that makes the best missionary.
+
