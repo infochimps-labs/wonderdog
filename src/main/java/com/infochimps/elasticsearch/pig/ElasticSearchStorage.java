@@ -1,42 +1,31 @@
 package com.infochimps.elasticsearch.pig;
 
-import java.io.IOException;
-import java.lang.InterruptedException;
-import java.util.Properties;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-
+import com.infochimps.elasticsearch.ElasticSearchInputFormat;
+import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
+import com.infochimps.elasticsearch.hadoop.util.HadoopUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.RecordWriter;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.io.*;
-
+import org.apache.hadoop.mapreduce.*;
 import org.apache.pig.LoadFunc;
-import org.apache.pig.StoreFuncInterface;
 import org.apache.pig.ResourceSchema;
-import org.apache.pig.impl.util.UDFContext;
+import org.apache.pig.StoreFuncInterface;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
+import org.apache.pig.impl.util.UDFContext;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 
-import com.infochimps.elasticsearch.ElasticSearchOutputFormat;
-import com.infochimps.elasticsearch.ElasticSearchInputFormat;
-import com.infochimps.elasticsearch.hadoop.util.HadoopUtils;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface {
 
@@ -57,6 +46,7 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     private static final String ES_REQUEST_SIZE = "elasticsearch.request.size";
     private static final String ES_NUM_SPLITS = "elasticsearch.num.input.splits";
     private static final String ES_QUERY_STRING = "elasticsearch.query.string";
+    private static final String ES_CLIENT_TYPE = "elasticsearch.client.type";
     
     private static final String COMMA = ",";
     private static final String LOCAL_SCHEME = "file://";
@@ -246,6 +236,11 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
                 String queryString = query.get("q");
                 if (queryString==null) queryString = "*";
                 job.getConfiguration().set(ES_QUERY_STRING, queryString);
+
+                // Set elasticsearch client type to be used in the Hadoop configuration
+                String clientType = query.get("client");
+                if (clientType==null) clientType = "client";
+                job.getConfiguration().set(ES_CLIENT_TYPE, clientType);
 
                 String numTasks = query.get("tasks");
                 if (numTasks==null) numTasks = "100";

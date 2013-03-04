@@ -1,43 +1,30 @@
 package com.infochimps.elasticsearch;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.Random;
-import java.net.URI;
-
+import com.infochimps.elasticsearch.hadoop.util.HadoopUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.apache.hadoop.conf.Configurable;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.Counter;
-import org.apache.hadoop.mapreduce.OutputFormat;
-import org.apache.hadoop.mapreduce.OutputCommitter;
-import org.apache.hadoop.filecache.DistributedCache;
-
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapreduce.*;
+import org.elasticsearch.ExceptionsHelper;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.ExceptionsHelper;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 
-import com.infochimps.elasticsearch.hadoop.util.HadoopUtils;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
    
@@ -50,6 +37,10 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
     static Log LOG = LogFactory.getLog(ElasticSearchOutputFormat.class);
     private Configuration conf = null;
 
+    enum ClientType {
+        CLIENT, TRANSPORT
+    }
+
     protected class ElasticSearchRecordWriter extends RecordWriter<NullWritable, MapWritable> {
 
         private Node node;
@@ -59,6 +50,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private int idField;
         private String idFieldName;
         private String objType;
+        private ClientType clientType;
         private String[] fieldNames;
         
         // Used for bookkeeping purposes
@@ -74,6 +66,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         private static final String ES_BULK_SIZE = "elasticsearch.bulk.size";
         private static final String ES_ID_FIELD_NAME = "elasticsearch.id.field.name";
         private static final String ES_ID_FIELD = "elasticsearch.id.field";
+        private static final String ES_CLIENT_TYPE = "elasticsearch.client.type";
         private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
         private static final String ES_CONFIG = "es.config";
         private static final String ES_PLUGINS = "es.path.plugins";
@@ -95,6 +88,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
            <li><b>elasticsearch.bulk.size</b> - The number of records to be accumulated into a bulk request before writing to elasticsearch.</li>
            <li><b>elasticsearch.is_json</b> - A boolean indicating whether the records to be indexed are json records. If false the records are assumed to be tsv, in which case <b>elasticsearch.field.names</b> must be set and contain a comma separated list of field names</li>
            <li><b>elasticsearch.object.type</b> - The type of objects being indexed</li>
+           <li><b>elasticsearch.client.type</b> - The type of client to be used for indexation. (client or transport). Default to client.</li>
            <li><b>elasticsearch.config</b> - The full path the elasticsearch.yml. It is a local path and must exist on all machines in the hadoop cluster.</li>
            <li><b>elasticsearch.plugins.dir</b> - The full path the elasticsearch plugins directory. It is a local path and must exist on all machines in the hadoop cluster.</li>
            </ul>
@@ -118,7 +112,12 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                 LOG.info("Using field:["+idFieldName+"] for document ids");
             }
             this.objType    = conf.get(ES_OBJECT_TYPE);
-            
+            if("transport".equals(conf.get(ES_CLIENT_TYPE))) {
+                this.clientType = ClientType.TRANSPORT;
+            } else {
+                this.clientType = ClientType.CLIENT;
+            }
+
             //
             // Fetches elasticsearch.yml and the plugins directory from the distributed cache, or
             // from the local config.
@@ -255,8 +254,20 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         //
         private void start_embedded_client() {
             LOG.info("Starting embedded elasticsearch client ...");
-            this.node   = NodeBuilder.nodeBuilder().client(true).node();
-            this.client = node.client();
+            switch (clientType) {
+                case TRANSPORT:
+                    // We don't want to sniff to avoid Too many files open
+                    // So it is going to take only the node in configuration
+                    Settings settings = ImmutableSettings.settingsBuilder()
+                            .put("client.transport.sniff", "false").build();
+                    this.client = new TransportClient(settings);
+                    break;
+                case CLIENT:
+                default:
+                    this.node   = NodeBuilder.nodeBuilder().client(true).node();
+                    this.client = node.client();
+                    break;
+            }
         }
     }
 
