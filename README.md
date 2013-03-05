@@ -17,7 +17,7 @@ This allows you to store tabular data (eg. tsv, csv) into elasticsearch.
 ```pig
 %default ES_JAR_DIR '/usr/local/share/elasticsearch/lib'
 %default INDEX      'ufo_sightings'
-%default OBJ        'sighting'        
+%default OBJ        'sighting'
 
 register target/wonderdog*.jar;
 register $ES_JAR_DIR/*.jar;
@@ -100,7 +100,7 @@ bin/estool refresh --index users
 You'll definitely want to do this after the bulk load finishes so you don't lose any data in case of cluster failure:
 
 ```
-bin/estool snapshot --index users	
+bin/estool snapshot --index users
 ```
 
 * Bump the replicas for the index up to at least one.
@@ -164,7 +164,7 @@ bin/estool optimize -c <elasticsearch_host> --index <index_name>
 * Snapshot an index
 
 ```
-bin/estool snapshot -c <elasticsearch_host> --index <index_name> 
+bin/estool snapshot -c <elasticsearch_host> --index <index_name>
 ```
 
 * Delete an index
@@ -183,22 +183,70 @@ The file examples/bulkload_pageviews.pig shows an example of bulk loading elasti
 Some tips for an industrial-strength cluster, assuming exclusive use of machines and no read load during the job:
 
 * use multiple machines with a fair bit of ram (7+GB). Heap doesn't help too much for loading though, so you don't have to go nuts: we do fine with amazon m1.large's.
-* Allocate a sizeable heap, setting min and max equal, and 
-  - turn `bootstrap.mlockall` on, and run `ulimit -l unlimited`. 
+* Allocate a sizeable heap, setting min and max equal, and
+  - turn `bootstrap.mlockall` on, and run `ulimit -l unlimited`.
   - For example, for a 3GB heap: `-Xmx3000m -Xms3000m -Delasticsearch.bootstrap.mlockall=true`
   - Never use a heap above 12GB or so, it's dangerous (STW compaction timeouts).
   - You've succeeded if the full heap size is resident on startup: that is, in htop both the VMEM and RSS are 3000 MB or so.
 * temporarily increase the `index_buffer_size`, to say 40%.
 
+### Further reading
+
+* [Elasticsearch JVM Settings, explained](http://jprante.github.com/2012/11/28/Elasticsearch-Java-Virtual-Machine-settings-explained.html)
+
+### Example of creating an index and mapping
+
+Index:
+
+    curl -XPUT ''http://localhost:9200/pageviews' -d '{"settings": {
+      "index": { "number_of_shards": 12, "store.compress": { "stored": true, "tv": true } } }}'
+
+    $ curl -XPUT 'http://localhost:9200/ufo_sightings/_settings?pretty=true'  -d '{"settings": {
+      "index": { "number_of_shards": 12, "store.compress": { "stored": true, "tv": true } } }}'
+
+Mapping (elasticsearch "type"):
+
+    # Wikipedia Pageviews
+    curl -XPUT ''http://localhost:9200/pageviews/pagehour/_mapping' -d '{
+      "pagehour": { "_source": { "enabled" : true }, "properties" : {
+        "page_id" :     { "type": "long",    "store": "yes" },
+        "namespace":    { "type": "integer", "store": "yes" },
+        "title":        { "type": "string",  "store": "yes" },
+        "num_visitors": { "type": "long",    "store": "yes" },
+        "date":         { "type": "integer", "store": "yes" },
+        "time":         { "type": "long",    "store": "yes" },
+        "ts":           { "type": "date",    "store": "yes" },
+        "day_of_week":  { "type": "integer", "store": "yes" } } }}'
+
+    $ curl -XPUT 'http://localhost:9200/ufo_sightings/sighting/_mapping' -d '{ "sighting": {
+        "_source": { "enabled" : true },
+        "properties" : {
+          "sighted_at": { "type": "date", "store": "yes" },
+		  "reported_at": { "type": "date", "store": "yes" },
+          "shape": { "type": "string", "store": "yes" },
+		  "duration": { "type": "string", "store": "yes" },
+          "description": { "type": "string", "store": "yes" },
+          "coordinates": { "type": "geo_point", "store": "yes" },
+		  "location_str": { "type": "string", "store": "no" },
+          "location": { "type": "object", "dynamic": false, "properties": {
+            "place_id": { "type": "string", "store": "yes" },
+			"place_type": { "type": "string", "store": "yes" },
+            "city": { "type": "string", "store": "yes" },
+			"county": { "type": "string", "store": "yes" },
+            "state": { "type": "string", "store": "yes" },
+			"country": { "type": "string", "store": "yes" } } }
+        } } }'
+
+
 ### Temporary Bulk-load settings for an index
 
 To prepare a database for bulk loading, the following settings may help. They are
 *EXTREMELY* aggressive, and include knocking the replication factor back to 1 (zero replicas). One
-false step and you've destroyed Tokyo. 
+false step and you've destroyed Tokyo.
 
 Actually, you know what?  Never mind.  Don't apply these, they're too crazy.
 
-    curl -XPUT 'localhost:9200/wikistats/_settings?pretty=true'  -d '{"index": {
+    curl -XPUT 'http://localhost:9200/pageviews/_settings?pretty=true'  -d '{"index": {
       "number_of_replicas": 0, "refresh_interval": -1, "gateway.snapshot_interval": -1,
       "translog":     { "flush_threshold_ops": 50000, "flush_threshold_size": "200mb", "flush_threshold_period": "300s" },
       "merge.policy": { "max_merge_at_once": 30, "segments_per_tier": 30, "floor_segment": "10mb" },
@@ -206,7 +254,7 @@ Actually, you know what?  Never mind.  Don't apply these, they're too crazy.
 
 To restore your settings, in case you didn't destroy Tokyo:
 
-    curl -XPUT 'localhost:9200/wikistats/_settings?pretty=true'  -d ' {"index": {
+    curl -XPUT 'http://localhost:9200/pageviews/_settings?pretty=true'  -d ' {"index": {
       "number_of_replicas": 2, "refresh_interval": "60s", "gateway.snapshot_interval": "3600s",
       "translog": { "flush_threshold_ops": 5000, "flush_threshold_size": "200mb", "flush_threshold_period": "300s" },
       "merge.policy": { "max_merge_at_once": 10, "segments_per_tier": 10, "floor_segment": "10mb" },
@@ -215,3 +263,27 @@ To restore your settings, in case you didn't destroy Tokyo:
 If you did destroy your database, please send your resume to jobs@infochimps.com as you begin your
 job hunt. It's the reformed sinner that makes the best missionary.
 
+
+### Post-bulkrun maintenance
+
+    es_index=pageviews ; ( for foo in _flush _refresh   '_optimize?max_num_segments=6&refresh=true&flush=true&wait_for_merge=true' '_gateway/snapshot'  ; do    echo "======= $foo" ; time curl -XPOST "http://localhost:9200/$es_index/$foo"  ; done ) &
+
+### Full dump of cluster health
+
+    es_index=pageviews ; es_node="projectes-elasticsearch-4"
+    curl -XGET "http://localhost:9200/$es_index/_status?pretty=true"
+    curl -XGET "http://localhost:9200/_cluster/state?pretty=true"
+    curl -XGET  "http://localhost:9200/$es_index/_stats?pretty=true&merge=true&refresh=true&flush=true&warmer=true"
+    curl -XGET "http://localhost:9200/_cluster/nodes/$es_node/stats?pretty=true&all=true"
+    curl -XGET "http://localhost:9200/_cluster/nodes/$es_node?pretty=true&all=true"
+    curl -XGET "http://localhost:9200/_cluster/health?pretty=true"
+    curl -XGET "http://localhost:9200/$es_index/_search?pretty=true&limit=3"
+    curl -XGET "http://localhost:9200/$es_index/_segments?pretty=true" | head -n 200
+
+### Decommission nodes
+
+Run this, excluding the decommissionable nodes from the list:
+
+    curl -XPUT http://localhost:9200/pageviews/_settings -d '{
+	  "index.routing.allocation.include.ironfan_name" :
+	    "projectes-elasticsearch-0,projectes-elasticsearch-1,projectes-elasticsearch-2" }'
