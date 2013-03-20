@@ -38,6 +38,15 @@ ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv.json' AS (json_recor
 STORE ufo_sightings INTO 'es://$INDEX/$OBJ?json=true&size=1000' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage();
 ```
 
+### Storing json data (using TransportClient) : ###
+
+```pig
+ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv.json' AS (json_record:chararray);
+STORE ufo_sightings INTO 'es://$INDEX/$OBJ?json=true&size=1000&client=transport' 
+	USING com.infochimps.elasticsearch.pig.ElasticSearchStorage('path/to/config', 'path/to/plugins', '10.0.0.1:9300,10.0.0.2:9300,10.0.0.3:9300');
+```
+
+
 #### Reading data:
 
 Easy too.
@@ -50,10 +59,11 @@ DUMP alien_sightings;
 
 #### ElasticSearchStorage Constructor
 
-The constructor to the UDF can take two arguments (in the following order):
+The constructor to the UDF can take two or tree (depending on the client type) arguments (in the following order):
 
 * ```esConfig``` - The full path to where elasticsearch.yml lives on the machine launching the hadoop job
 * ```esPlugins``` - The full path to where the elasticsearch plugins directory lives on the machine launching the hadoop job
+* ```addresses``` - The comma separated entry-point nodes where the hadoop workers will connect to index data
 
 #### Query Parameters
 
