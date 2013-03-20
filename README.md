@@ -38,7 +38,7 @@ ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv.json' AS (json_recor
 STORE ufo_sightings INTO 'es://$INDEX/$OBJ?json=true&size=1000' USING com.infochimps.elasticsearch.pig.ElasticSearchStorage();
 ```
 
-### Storing json data (using TransportClient) : ###
+##### Storing json data (using TransportClient) :
 
 ```pig
 ufo_sightings = LOAD '/data/domestic/aliens/ufo_awesome.tsv.json' AS (json_record:chararray);
