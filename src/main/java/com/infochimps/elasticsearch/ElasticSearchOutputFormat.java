@@ -264,7 +264,7 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
         // Starts an embedded elasticsearch client (ie. data = false)
         //
         private void start_embedded_client() {
-            LOG.info("Starting embedded elasticsearch [" + clientType.toString() + "] client ...");
+            LOG.info("Starting embedded elasticsearch [" + clientType.name() + "] client ...");
             switch (clientType) {
                 case TRANSPORT:
                     // We don't want to sniff to avoid Too many files open
@@ -275,9 +275,12 @@ public class ElasticSearchOutputFormat extends OutputFormat<NullWritable, MapWri
                     TransportClient transport = new TransportClient(settings);
                     for(String addr : transportAddr) {
                         String[] sockAddr = addr.split(":");
-                        transport.addTransportAddress(
+                        LOG.info("Connecting to : " + addr);
+                        if (sockAddr.length == 2) {
+                            transport.addTransportAddress(
                                 new InetSocketTransportAddress(
-                                        new InetSocketAddress(sockAddr[0], Integer.parseInt(sockAddr[1]))));
+                                    new InetSocketAddress(sockAddr[0], Integer.parseInt(sockAddr[1]))));
+                        }
                     }
 
                     this.client = transport;
