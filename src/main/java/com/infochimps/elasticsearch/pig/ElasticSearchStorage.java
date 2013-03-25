@@ -53,6 +53,8 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     private static final String ES_ID_FIELD_NAME = "elasticsearch.id.field.name";
     private static final String ES_OBJECT_TYPE = "elasticsearch.object.type";
     private static final String ES_IS_JSON = "elasticsearch.is_json";
+	private static final String ES_IS_AVRO = "elasticsearch.is_avro";
+
     private static final String PIG_ES_FIELD_NAMES = "elasticsearch.pig.field.names";
     private static final String ES_REQUEST_SIZE = "elasticsearch.request.size";
     private static final String ES_NUM_SPLITS = "elasticsearch.num.input.splits";
@@ -166,24 +168,24 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
         MapWritable record  = new MapWritable();
 
         String isJson = property.getProperty(ES_IS_JSON);
-        // Handle delimited records (ie. isJson == false)
-        if (isJson != null && isJson.equals("false")) {
-            String[] fieldNames = property.getProperty(PIG_ES_FIELD_NAMES).split(COMMA);
-            for (int i = 0; i < t.size(); i++) {
-                if (i < fieldNames.length) {
-                    try {
-                        record.put(new Text(fieldNames[i]), new Text(t.get(i).toString()));
-                    } catch (NullPointerException e) {
-                        //LOG.info("Increment null field counter.");
-                    }
-                }
-            }            
-        } else {
+		String isAvro = property.getProperty(ES_IS_AVRO);
+
+		// Handle avro records (ie. isAvro == true)
+		if (isAvro != null && isAvro.equals("true")) {
+			String[] fieldNames = property.getProperty(PIG_ES_FIELD_NAMES)
+					.split(COMMA);
+			record = tupleToWritable(t, fieldNames);
+
+		} else
+		// Format JSON
+		// Handle json records (ie. isJson == true)
+		if (isJson != null && isJson.equals("true")) {
             if (!t.isNull(0)) {                
                 String jsonData = t.get(0).toString();
                 // parse json data and put into mapwritable record
                 try {
-                    HashMap<String,Object> data = mapper.readValue(jsonData, HashMap.class);
+					HashMap<String, Object> data = mapper.readValue(jsonData,
+							HashMap.class);
                     record = (MapWritable)toWritable(data);
                 } catch (JsonParseException e) {
                     e.printStackTrace();
@@ -191,6 +193,21 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
                     e.printStackTrace();
                 }
             }
+
+		} else {
+			// Handle delimited records (ie. isJson == false, isAvro == false)
+			String[] fieldNames = property.getProperty(PIG_ES_FIELD_NAMES)
+					.split(COMMA);
+			for (int i = 0; i < t.size(); i++) {
+				if (i < fieldNames.length) {
+					try {
+						record.put(new Text(fieldNames[i]), new Text(t.get(i)
+								.toString()));
+					} catch (NullPointerException e) {
+						// LOG.info("Increment null field counter.");
+					}
+				}
+			}
         }
                 
         try {
@@ -273,7 +290,18 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
                 if (isJson==null || isJson.equals("false")) {
                     // We're dealing with delimited records
                     UDFContext context  = UDFContext.getUDFContext();
-                    Properties property = context.getUDFProperties(ResourceSchema.class);
+					Properties property = context
+							.getUDFProperties(ResourceSchema.class);
+					property.setProperty(ES_IS_JSON, "false");
+				}
+
+				String isAvro = query.get("avro");
+				if (isAvro != null || isJson.equals("true")) {
+					// We're dealing with avro records
+					UDFContext context = UDFContext.getUDFContext();
+					Properties property = context
+							.getUDFProperties(ResourceSchema.class);
+					property.setProperty(ES_IS_AVRO, "true");
                     property.setProperty(ES_IS_JSON, "false");
                 }
 
@@ -314,8 +342,23 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     }
 
     /**
-       Recursively converts an arbitrary object into the appropriate writable. Please enlighten me if there is an existing
-       method for doing this.      
+	 * Recursively converts an arbitrary object into the appropriate writable.
+	 * Please enlighten me if there is an existing method for doing this.
+	 */
+	private MapWritable tupleToWritable(Tuple tuple, String[] fieldNames) {
+		List<Object> attributes = tuple.getAll();
+		MapWritable listOfThings = new MapWritable();
+		for (int i = 0; i < fieldNames.length; i++) {
+			listOfThings.put(toWritable(fieldNames[i]),
+					toWritable(((List) attributes).get(i)));
+		}
+		return listOfThings;
+
+	}
+
+	/**
+	 * Recursively converts an arbitrary object into the appropriate writable.
+	 * Please enlighten me if there is an existing method for doing this.
     */
     private Writable toWritable(Object thing) {
         if (thing instanceof String) {
@@ -352,4 +395,8 @@ public class ElasticSearchStorage extends LoadFunc implements StoreFuncInterface
     @Override
     public void cleanupOnFailure(String location, Job job) throws IOException {
     }
+
+	@Override
+	public void cleanupOnSuccess(String location, Job job) throws IOException {
+	}
 }
