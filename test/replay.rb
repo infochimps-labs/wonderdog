@@ -76,9 +76,11 @@ class ParseMetaData
   def find_meta_data(meta)
     start = @metaString.enum_for(:scan, Regexp.new(meta)).map {Regexp.last_match.begin(0) + meta.size}
     index = get_left_bracket_indexes.index(start[0])
-    bracket_pair = @bracket_pairs[index]
-    #puts @metaString[bracket_pair[0]+1..bracket_pair[1]-1].inspect
-    @metaData[meta] = @metaString[bracket_pair[0]+1..bracket_pair[1]-1]
+    unless index.nil?
+      bracket_pair = @bracket_pairs[index]
+      #puts @metaString[bracket_pair[0]+1..bracket_pair[1]-1].inspect
+      @metaData[meta] = @metaString[bracket_pair[0]+1..bracket_pair[1]-1]
+    end
   end
 
   def get_extra_meta_data
