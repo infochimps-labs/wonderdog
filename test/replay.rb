@@ -45,7 +45,65 @@ Settings.resolve!
 # *At least first 50 char of query                                                                                     #
 ########################################################################################################################
 
-def parse_logline(line)
+class ParseMetaData
+  attr_accessor :metaData
+
+  def initialize(metaString, metaArray = [])
+    @metaString = metaString
+    @metaArray = metaArray
+    @metaData = {}
+    @bracket_pairs = get_bracket_pair_indexes
+  end
+
+  def get_left_bracket_indexes
+    @metaString.enum_for(:scan, Regexp.new('\[')).map {Regexp.last_match.begin(0)}
+  end
+
+  def get_right_bracket_indexes
+    @metaString.enum_for(:scan, Regexp.new('\]')).map {Regexp.last_match.begin(0)}
+  end
+
+  def get_bracket_pair_indexes
+    get_left_bracket_indexes.zip(get_right_bracket_indexes)
+  end
+
+  def get_query
+    startInd = @metaString.enum_for(:scan, Regexp.new(' source\[')).map {Regexp.last_match.begin(0)+8}
+    endInd = @metaString.enum_for(:scan, Regexp.new('_source\[')).map {Regexp.last_match.begin(0)-9}
+    @metaData["query"] = @metaString[startInd[0]..endInd[0]]
+  end
+
+  def find_meta_data(meta)
+    start = @metaString.enum_for(:scan, Regexp.new(meta)).map {Regexp.last_match.begin(0) + meta.size}
+    index = get_left_bracket_indexes.index(start[0])
+    bracket_pair = @bracket_pairs[index]
+    #puts @metaString[bracket_pair[0]+1..bracket_pair[1]-1].inspect
+    @metaData[meta] = @metaString[bracket_pair[0]+1..bracket_pair[1]-1]
+  end
+
+  def get_extra_meta_data
+    @metaArray.each do |meta|
+      find_meta_data(meta)
+    end
+  end
+
+  def get_basic_meta_data
+    #FIXME! Make this dynamic and depended on the first four [] to contain the same things everytime
+    @metaData["timestamp"] = @metaString[@bracket_pairs[0][0]+1..@bracket_pairs[0][1]-1]
+    @metaData["node"] = @metaString[@bracket_pairs[3][0]+1..@bracket_pairs[3][1]-1]
+    @metaData["index"] = @metaString[@bracket_pairs[4][0]+1..@bracket_pairs[4][1]-1]
+  end
+
+  def get_meta_data
+    get_basic_meta_data
+    get_query
+    unless @metaArray == []
+      get_extra_meta_data
+    end
+  end
+end
+
+def parse_logline(line, metaArray)
 
   if (line =~ %r{, source\[(.*)\], extra_source})
     query = $1
@@ -54,27 +112,11 @@ def parse_logline(line)
     return
   end
 
-  line_parts = line.split("] [")
-  front_meta = line_parts[0].split("][")
-  back_meta = line_parts[2].split(", ")
-  query_size = back_meta[4].length() - 2
-  es_duration_size = back_meta[1].size
+  #puts line
+  parser = ParseMetaData.new(line, metaArray)
+  parser.get_meta_data
 
-  query_hash = {}
-  query_hash['node'] = line_parts[1]
-
-  query_hash['original_timestamp'] = front_meta[0][1..-1]
-  query_hash['flag'] = front_meta[1]
-  query_hash['query_type'] = front_meta[2]
-
-  query_hash['search_type'] = back_meta[2]
-  query_hash['num_total_shards'] = back_meta[3]
-  query_hash['es_duration'] = back_meta[1][12..es_duration_size-2]
-  query_hash['index'] = back_meta[0].split("][")[0]
-  query_hash['extra_source'] = back_meta[5]
-
-  return query, query_hash
-
+  return parser.metaData["query"], parser.metaData
 end
 
 ########################################################################################################################
@@ -102,21 +144,14 @@ def output(query, data, malformed=false)
   else
     took = data['took'].to_s
     current_time = data['new_timestamp'].to_s
-    original_timestamp = data['original_timestamp'].to_s
-    es_duration = data['es_duration'].to_s
+    original_timestamp = data['timestamp'].to_s
+    es_duration = data['original_dur'].to_s
     new_duration = data['new_duration'].to_i.to_s
     node = data['node'].to_s
     index = data['index'].to_s
     if Random.rand() < 0.1
       header
     end
-    #puts took.inspect, current_time.inspect, original_timestamp.inspect, es_duration.inspect, new_duration.inspect, node.inspect, index.inspect
-
-
-    #puts "'current_time' \t 'original_timestamp' \t 'es_duration' \t 'new_duration' \t 'clock_time_duration' \t 'node'" +
-    #         " \t 'index' \t 'extra_source'"
-
-    #puts %w[current_time original_timestamp es_duration new_duration clock_time_duration node index].join("\t")
     puts [current_time, original_timestamp, es_duration, took, new_duration, node, index, query_fragment].join("\t")
   end
 end
@@ -127,14 +162,14 @@ end
 
 def execute_query(query, data)
   if query.include? " " or query.index('(\\\'.*?\\\')').nil?
-    if data['search_type'] == "search_type[QUERY_THEN_FETCH]"
-      #puts "Executing query #{q_count}/#{@slowlog_lines.size}"
+    if data['search_type'] == "QUERY_THEN_FETCH"
       data['new_timestamp'] = Time.now
       data['new_start_time'] = Time.now.to_f * 1000
-      puts "curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'"
-      curl_result = `curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'`
+      #puts "curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'"
+      curl_result = `curl -s -XGET '#{Settings.host}:#{Settings.port}/#{data['index']}/_search/' -d '#{query}'`
       data['new_end_time'] = Time.now.to_f * 1000
       data['new_duration'] = data['new_end_time'] - data['new_start_time']
+      data['original_dur'] = data['took']
       data = data.merge(JSON.parse(curl_result))
       output(query, data)
     else
@@ -155,10 +190,11 @@ end
 
 logfile = Settings.logfile
 sl_regex = Regexp.new(('(slowlog\\.query)'), Regexp::IGNORECASE)
+metaArray = %w[took took_millis types search_type total_shards]
 header
 File.readlines(logfile).each do |line|
   if sl_regex.match(line)
-    query, query_hash = parse_logline(line)
+    query, query_hash = parse_logline(line, metaArray)
     execute_query(query, query_hash)
   end
 end
