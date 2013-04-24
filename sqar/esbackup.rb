@@ -33,6 +33,7 @@ Settings.define :batch_size, default: 10000,              flag: 'b', description
 Settings.define :index,                                   flag: 'i', description: 'Index to backup/restore', required: true
 Settings.define :mappings,                                flag: 'm', description: 'Dump mappings to or load mappings from provided file'
 Settings.define :query,                                   flag: 'q', description: 'A JSON hash containing a query to apply to the command (backup only)'
+Settings.define :dump_file,  default: nil                 flag: 'd', description: 'The name of the JSON dump file, if not passed the index name will be the dump files name'
 Settings.resolve!
 
 Tire::Configuration.url "http://#{Settings[:host]}:#{Settings[:port]}"
@@ -40,11 +41,17 @@ Tire::Configuration.url "http://#{Settings[:host]}:#{Settings[:port]}"
 class ESBackup
 
   def initialize(output_dir, options = {})
+    options = options.merge()
     @output_dir   = output_dir || ''
     @index        = options[:index]
     @batch_size   = options[:batch_size].to_i
     @mapping_file = options[:mappings]
     @query        = MultiJson.load(options[:query]) rescue nil
+    if options[:dump_file].nil?
+      @dump_file    = @index
+    else
+      @dump_file = options[:dump_file]
+    end
   end
 
   def dump_mapping
