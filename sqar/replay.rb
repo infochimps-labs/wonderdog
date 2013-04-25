@@ -28,12 +28,12 @@ require 'time'
 # * Get logfile                                                                                                        #
 ########################################################################################################################
 
-Settings.use :commandline
-Settings.use :config_block
-Settings.define :logfile
-Settings.define :host
-Settings.define :port
-Settings.resolve!
+#Settings.use :commandline
+#Settings.use :config_block
+#Settings.define :logfile
+#Settings.define :host
+#Settings.define :port
+#Settings.resolve!
 
 ########################################################################################################################
 # Parse logfile, grab:                                                                                                 #
@@ -132,72 +132,79 @@ end
 # A snippet of query                                                                                                   #
 # Extra source data from logfile                                                                                       #
 ########################################################################################################################
+class Replay
 
-def header()
-  puts "\n"
-  puts %w[current_timestamp original_timestamp es_duration(ms) new_duration(ms) clock_time_duration(ms) node index query_fragment].join("\t")
-end
-
-def output(query, data, malformed=false)
-  query_fragment = query[0..49]
-  if malformed
-    puts "malformed"
-    puts query_fragment
-  else
-    took = data['took'].to_s
-    current_time = data['new_timestamp'].to_s
-    original_timestamp = data['timestamp'].to_s
-    es_duration = data['original_dur'].to_s
-    new_duration = data['new_duration'].to_i.to_s
-    node = data['node'].to_s
-    index = data['index'].to_s
-    if Random.rand() < 0.1
-      header
-    end
-    puts [current_time, original_timestamp, es_duration, took, new_duration, node, index, query_fragment].join("\t")
+  def initialize(logfile, host, port)
+    @logfile = logfile
+    @host = host
+    @port = port
   end
-end
+
+  def header()
+    puts "\n"
+    puts %w[current_timestamp original_timestamp es_duration(ms) new_duration(ms) clock_time_duration(ms) node index query_fragment].join("\t")
+  end
+
+  def output(query, data, malformed=false)
+    query_fragment = query[0..49]
+    if malformed
+      puts "malformed"
+      puts query_fragment
+    else
+      took = data['took'].to_s
+      current_time = data['new_timestamp'].to_s
+      original_timestamp = data['timestamp'].to_s
+      es_duration = data['original_dur'].to_s
+      new_duration = data['new_duration'].to_i.to_s
+      node = data['node'].to_s
+      index = data['index'].to_s
+      if Random.rand() < 0.1
+        header
+      end
+      puts [current_time, original_timestamp, es_duration, took, new_duration, node, index, query_fragment].join("\t")
+    end
+  end
 
 ########################################################################################################################
 # Execute slow query from log                                                                                          #
 ########################################################################################################################
 
-def execute_query(query, data)
-  if query.include? " " or query.index('(\\\'.*?\\\')').nil?
-    if data['search_type'] == "QUERY_THEN_FETCH"
-      data['new_timestamp'] = Time.now
-      data['new_start_time'] = Time.now.to_f * 1000
-      #puts "curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'"
-      curl_result = `curl -s -XGET '#{Settings.host}:#{Settings.port}/#{data['index']}/_search/' -d '#{query}'`
-      data['new_end_time'] = Time.now.to_f * 1000
-      data['new_duration'] = data['new_end_time'] - data['new_start_time']
-      data['original_dur'] = data['took']
-      data = data.merge(JSON.parse(curl_result))
-      output(query, data)
+  def execute_query(query, data)
+    if query.include? " " or query.index('(\\\'.*?\\\')').nil?
+      if data['search_type'] == "QUERY_THEN_FETCH"
+        data['new_timestamp'] = Time.now
+        data['new_start_time'] = Time.now.to_f * 1000
+        #puts "curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'"
+        curl_result = `curl -s -XGET '#{@host}:#{@port}/#{data['index']}/_search/' -d '#{query}'`
+        data['new_end_time'] = Time.now.to_f * 1000
+        data['new_duration'] = data['new_end_time'] - data['new_start_time']
+        data['original_dur'] = data['took']
+        data = data.merge(JSON.parse(curl_result))
+        output(query, data)
+      else
+        puts "error don't know search type, please throw an exception here"
+      end
     else
-      puts "error don't know search type, please throw an exception here"
+      puts "malformed query string"
+      puts query
+      output(query, data, malformed=true)
     end
-  else
-    puts "malformed query string"
-    puts query
-    output(query, data, malformed=true)
   end
-end
 
 ########################################################################################################################
 # MAIN                                                                                                                 #
 ########################################################################################################################
 
-
-
-logfile = Settings.logfile
-sl_regex = Regexp.new(('(slowlog\\.query)'), Regexp::IGNORECASE)
-metaArray = %w[took took_millis types search_type total_shards]
-header
-File.readlines(logfile).each do |line|
-  if sl_regex.match(line)
-    query, query_hash = parse_logline(line, metaArray)
-    execute_query(query, query_hash)
+  def run
+    sl_regex = Regexp.new(('(slowlog\\.query)'), Regexp::IGNORECASE)
+    metaArray = %w[took took_millis types search_type total_shards]
+    header
+    File.readlines(@logfile).each do |line|
+      if sl_regex.match(line)
+        query, query_hash = parse_logline(line, metaArray)
+        execute_query(query, query_hash)
+      end
+    end
   end
 end
 
