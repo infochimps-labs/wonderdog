@@ -41,15 +41,20 @@ require 'multi_json'
 class ESBackup
 
   def initialize(output_dir, options = {})
+    Tire::Configuration.url "http://#{options[:host]}:#{options[:port]}"
     @output_dir   = output_dir || ''
     @index        = options[:index]
     @batch_size   = options[:batch_size].to_i
     @mapping_file = options[:mappings]
-    @query        = MultiJson.load(options[:query]) rescue nil
-    if options[:dump_file].nil?
-      @dump_file    = @index
+    if options[:query].nil?
+      @query      = nil
     else
-      @dump_file = options[:dump_file]
+      @query      = MultiJson.load(options[:query]) rescue nil
+    end
+    if options[:dump_file].nil?
+      @dump_file  = @index
+    else
+      @dump_file  = options[:dump_file]
     end
   end
 
@@ -106,6 +111,7 @@ end
 class ESRestore
 
   def initialize(input, options = {})
+    Tire::Configuration.url "http://#{options[:host]}:#{options[:port]}"
     @index        = options[:index]
     @batch_size   = options[:batch_size].to_i
     @gz_input     = Zlib::GzipReader.open(input)
@@ -140,6 +146,7 @@ end
 class ESDup
 
   def initialize(input, options = {})
+    Tire::Configuration.url "http://#{options[:host]}:#{options[:port]}"
     @index        = options[:index]
     @batch_size   = options[:batch_size].to_i
     @gz_input     = Zlib::GzipReader.open(input)
