@@ -56,6 +56,9 @@ curl -XGET 'localhost:9200/flight_count_20130408/flight_count/_search?pretty=tru
 # DEATH WARMER
 **** 8226
 curl -s 'localhost:9200/flight_count_20130408/flight_count/_search?cache=true&preference=_primary_first' -d '{"query":{"match_all":{}},"facets":{"igna":{"date_histogram":{"field":"tb_h","interval":"day"}},"ignb":{"terms":{"fields":["_state","base_feature","cnt","feature","flight_id","metric","metric_feature","seconds","tb_h"]}},"ign__state":{"terms_stats":{"key_field":"_state","value_field":"cnt"}},"ign_base_feature":{"terms_stats":{"key_field":"base_feature","value_field":"cnt"}},"ign_cnt":{"terms_stats":{"key_field":"cnt","value_field":"cnt"}},"ign_feature":{"terms_stats":{"key_field":"feature","value_field":"cnt"}},"ign_flight_id":{"terms_stats":{"key_field":"flight_id","value_field":"cnt"}},"ign_metric":{"terms_stats":{"key_field":"metric","value_field":"cnt"}},"ign_metric_feature":{"terms_stats":{"key_field":"metric_feature","value_field":"cnt"}},"ign_seconds":{"terms_stats":{"key_field":"seconds","value_field":"cnt"}},"ign_tb_h":{"terms_stats":{"key_field":"tb_h","value_field":"cnt"}},"ignc":{"terms_stats":{"key_field":"metric_feature","value_field":"cnt"}}}}'
+# get mapping
+curl -XGET 'http://localhost:9200/placement_count/_mapping'
+
 
 #proxy to storm spongecell
 ssh -L 8080:10.151.84.59:8080 23.20.7.243
