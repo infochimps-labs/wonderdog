@@ -176,6 +176,13 @@ class SQAR
     end
   end
 
+  def cardinality(options)
+    options[:fields].each do |field|
+      `ruby getFields.rb --dump=#{} --field=#{field} >> #{field}.txt ;
+        cat #{field}.txt |sort | uniq -c |sort -n | wc -l;`
+    end
+  end
+
   def task_caller
     @execute_tasks.each do |task, options|
       case command = task.to_sym
@@ -192,7 +199,8 @@ class SQAR
           options[:mappings] = options[:duplicate_mapping]
           ESDup.new(options[:output_dir], options).run
         when :cardinality
-          Cardinality.new(options[:dump_file])
+          cardinality(options)
+          #Cardinality.new(options[:dump_file])
         when :warmer
           determine_warmer_action(options)
         when :replay
