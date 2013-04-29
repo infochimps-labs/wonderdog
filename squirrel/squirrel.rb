@@ -7,8 +7,8 @@
 #    ruby squirrel.rb --host=localhost --port=9200 --execute_slow_queries=/var/log/elasticsearch/padraig.log
 # get backup an index aka generate a dumpfile
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --dump_index=flight_count_20130405 --batch_size=100 --mapping_file=flight_count_20130405_mapping.json
-# get the cardinatlity of a dumpfile
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --dump-file=flight_count_20130405 --cardinality=cnt.metric
+# get the cardinatlity of a dumpfile(card_file)
+#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --card_file=flight_count_20130405 --cardinality=cnt,metric
 
 require "configliere"
 require_relative "../test/esbackup_stripped.rb"
