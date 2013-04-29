@@ -10,7 +10,7 @@
 # get the cardinatlity of a dumpfile(card_file)
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --card_file=flight_count_20130405 --cardinality=cnt,metric
 # restore an index from a dumpfile
-#    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir="." --restore_file=flight_count_20130405.gz --restore_index=flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json
+#    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir="." --restore_file=flight_count_20130405.gz --restore_index=flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json --batch_size=100
 
 require "configliere"
 require_relative "../test/esbackup_stripped.rb"
