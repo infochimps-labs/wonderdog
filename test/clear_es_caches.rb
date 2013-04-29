@@ -18,6 +18,7 @@ class ClearESCaches
   end
 
   def run
+    puts @to_clear
     case command = @to_clear.to_sym
       when :all then clear_all
       when :filter then clear_filter_cache
