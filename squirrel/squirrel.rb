@@ -116,7 +116,7 @@ class Squirrel
         execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index settings settings_values]
     #puts "\n"
     #puts @some_option_names.inspect
-    @tasks = %w[backup backup restore restore restore restore duplicate duplicate duplicate cardinality cardinality warmer
+    @tasks = %w[backup backup restore restore restore duplicate duplicate duplicate cardinality cardinality cardinality warmer
                 warmer warmer warmer replay cache cache cache index_settings index_settings index_settings]
     #puts @tasks.inspect
     @base_tasks_params = {:output_dir => @output_dir, :batch_size => @batch_size, :port => @port, :host => @host}
