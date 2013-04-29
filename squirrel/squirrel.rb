@@ -1,10 +1,10 @@
 #### This is the uber script the arguements you give it decide what happens
 ## squirrel => Standard Query Ultracrepidate Iamatology Ruby Resource for Elasticsearch Labarum ##
 # example commands:
-# disable warmers, clear all caches
+# clear all caches
 #    ruby squirrel.rb --host=localhost --port=9200 --clear_all_cache=true
-#disable warmers, run slow log queries, clear all caches
-#    ruby squirrel.rb --host=localhost --port=9200 --clear_all_cache=true --execute_slow_queries=/var/log/elasticsearch/padraig.log
+# run slow log queries
+#    ruby squirrel.rb --host=localhost --port=9200 --execute_slow_queries=/var/log/elasticsearch/padraig.log
 
 
 require "configliere"
@@ -124,7 +124,7 @@ class SQAR
   end
 
   def add_task?(var, var_name, task_name)
-    if is_not_nil?(var) || (is_bool?(var) && var)
+    if is_not_nil?(var) || var != []
       @execute_tasks[task_name] ||= {}
       @execute_tasks[task_name][var_name.to_sym] = var
       unless @execute_tasks[task_name].has_key?(:cache)
