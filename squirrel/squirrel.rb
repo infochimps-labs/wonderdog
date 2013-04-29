@@ -140,6 +140,7 @@ class Squirrel
     @task_controllers.each do |var, var_sym, task|
       add_task?(var, var_sym, task)
     end
+    puts @execute_tasks.inspect
   end
 
   def determine_warmer_action(options = {})
