@@ -12,7 +12,8 @@ class WarmerInterface
   end
 
   def add_warmer
-    `curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`
+    output = `curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`
+    puts output
   end
 
   def remove_warmer
