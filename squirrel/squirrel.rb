@@ -124,7 +124,7 @@ class SQAR
   end
 
   def add_task?(var, var_name, task_name)
-    if is_not_nil?(var) || var != []
+    if is_not_nil?(var) && var != []
       puts "var: #{var}, var_name: #{var_name}, task_name: #{task_name}"
       @execute_tasks[task_name] ||= {}
       @execute_tasks[task_name][var_name.to_sym] = var
