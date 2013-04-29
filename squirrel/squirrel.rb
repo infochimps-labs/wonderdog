@@ -28,14 +28,13 @@ Settings.define :warmers,                                   default: false, desc
 Settings.define :new_warmers_name,                          default: nil,   description: 'Name of warmer to create, defaults to nil'
 Settings.define :create_warmer,                             default: nil,   description: 'Query to create warmer, defaults to nil'
 Settings.define :remove_warmer,                             default: nil,   description: 'Name of warmer to remove, defaults to nil'
-Settings.define :execute_slow_queries,                      default: nil,   description: 'Execute the slow log queries in the given log file, defaults to nil'
+Settings.define :execute_slow_queries,                      default: nil,   description: 'Execute the slow log queries in the provided log file,ie --execute_slow_log=/var/log/elasticsearch/padraig.log, defaults to nil'
 Settings.define :batch_size,                                default: 100,   description: 'Batch size when processing gzip file, defaults to 100'
 Settings.define :dump_mapping,                              default: nil,   description: 'The name of the file in which to dump the indexes mapping, defaults to nil'
 Settings.define :restore_mapping,                           defualt: nil,   description: 'The mapping json file to use when restoring the index, defaults to nil'
 Settings.define :duplicate_mapping,                         default: nil,   description: 'The mapping json file to use when duplicating documents in an index, defaults to nil'
 Settings.define :host,                                      default: nil,   description: 'The elasticsearch hostname, defaults to nil'
 Settings.define :port,                                      default: 9200,  description: 'The port on the elasticsearch host to connect to, defaults to 9200'
-Settings.define :logfile,                                   default: nil,   description: 'Logfile to use for slow logs, default nil'
 Settings.define :clear_all_cache,                           default: false, description: 'Clear all caches, defaults to false'
 Settings.define :clear_filter_cache,                        default: false, description: 'Clear filter cache, defaults to false'
 Settings.define :clear_fielddata,                           default: false, description: 'Clear fielddata, defaults to false'
@@ -77,10 +76,9 @@ class SQAR
     @duplicate_mapping = options[:duplicate_mapping]
     @host = options[:host]
     @port = options[:port]
-    @logfile = options[:logfile]
     @clear_all_cache = options[:clear_all_cache]
-
     @clear_filter_cache = options[:clear_filter_cache]
+
     @clear_fielddata = options[:clear_fielddata]
     @settings_index = options[:settings_index]
     @settings = options[:es_index_settings]
@@ -103,19 +101,19 @@ class SQAR
   def build_task_controllers
     @some_option_names = %w[dump_index dump_mapping restore_index restore_mapping create_index duplicate_index
         duplicate_mapping restore_index cardinality new_warmers_name remove_warmer warmers create_warmer
-        execute_slow_query logfile clear_all_cache clear_filter_cache clear_fielddata settings_index settings
+        execute_slow_query clear_all_cache clear_filter_cache clear_fielddata settings_index settings
         settings_values]
     #puts "\n"
     #puts @some_option_names.inspect
     @tasks = %w[backup backup restore restore restore restore duplicate duplicate cardinality warmer warmer warmer warmer
-                replay replay cache cache cache index_settings index_settings index_settings]
+                replay cache cache cache index_settings index_settings index_settings]
     #puts @tasks.inspect
     @base_tasks_params = {:output_dir => @output_dir, :batch_size => @batch_size, :port => @port, :host => @host}
 
     @task_controllers = [@dump_index, @dump_mapping, @restore_index, @restore_mapping, @create_index, @duplicate_index,
                          @duplicate_mapping, @restore_index, @cardinality, @new_warmers_name, @remove_warmer, @warmers,
-                         @create_warmer, @execute_slow_queries, @logfile, @clear_all_cache, @clear_fielddata,
-                         @clear_filter_cache, @settings_index, @settings, @settings_values].zip(@some_option_names, @tasks)
+                         @create_warmer, @execute_slow_queries, @clear_all_cache, @clear_fielddata, @clear_filter_cache,
+                         @settings_index, @settings, @settings_values].zip(@some_option_names, @tasks)
     #puts "\n"
     #@task_controllers.each do |pairs|
     #  puts pairs.inspect
@@ -207,7 +205,7 @@ class SQAR
         when :warmer
           determine_warmer_action(options)
         when :replay
-          Replay.new(options[:logfile], options[:host], options[:port])
+          Replay.new(options[:execute_slow_queries], options[:host], options[:port])
         when :cache
           determine_cache_clear(options)
         when :index_settings
