@@ -119,7 +119,7 @@ class Squirrel
     #puts @tasks.inspect
     @base_tasks_params = {:output_dir => @output_dir, :batch_size => @batch_size, :port => @port, :host => @host}
 
-    @task_controllers = [@dump_index, @dump_mapping, @restore_index, @restore_index, @restore_mapping, @create_index,
+    @task_controllers = [@dump_index, @dump_mapping, @restore_file, @restore_index, @restore_mapping, @create_index,
                          @duplicate_index, @duplicate_mapping, @restore_index, @cardinality, @card_file,
                          @new_warmers_name, @remove_warmer, @warmers, @create_warmer, @execute_slow_queries,
                          @clear_all_cache, @clear_fielddata, @clear_filter_cache, @settings_index, @settings,
