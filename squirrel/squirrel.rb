@@ -212,7 +212,7 @@ class Squirrel
         when :duplicate
           options[:index] = options[:duplicate_index]
           options[:mappings] = options[:duplicate_mapping]
-          ESDup.new(options[:output_dir], options).run
+          ESDup.new(options[:duplicate_file], options).run
         when :cardinality
           cardinality(options)
         when :warmer
