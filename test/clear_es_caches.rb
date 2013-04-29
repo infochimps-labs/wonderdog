@@ -14,16 +14,13 @@ class ClearESCaches
   end
 
   def clear_fielddata
-    puts " `curl -s -XPOST 'http://#{@host}:#{@port}/_all/_cache/clear?field_data=true&filter=false&bloom=true' ; echo`"
     `curl -s -XPOST 'http://#{@host}:#{@port}/_all/_cache/clear?field_data=true&filter=false&bloom=true' ; echo`
   end
 
   def run
     puts @to_clear
     case command = @to_clear.to_sym
-      when :all then
-        clear_filter_cache
-        clear_fielddata
+      when :all then clear_all
       when :filter then clear_filter_cache
       when :fielddata then clear_fielddata
       else abort "#{command} not recognized"
