@@ -6,7 +6,7 @@
 require "configliere"
 require_relative "../test/esbackup_stripped.rb"
 require_relative "../test/cardinality.rb"
-require_relative "../sqar/replay.rb"
+require_relative "../squirrel/replay.rb"
 require_relative "../test/warmer_interface.rb"
 require_relative "../test/clear_es_caches.rb"
 require_relative "../test/change_es_index_settings.rb"
