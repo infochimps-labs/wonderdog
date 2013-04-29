@@ -125,6 +125,7 @@ class SQAR
 
   def add_task?(var, var_name, task_name)
     if is_not_nil?(var) || var != []
+      puts "var: #{var}, var_name: #{var_name}, task_name: #{task_name}"
       @execute_tasks[task_name] ||= {}
       @execute_tasks[task_name][var_name.to_sym] = var
       unless @execute_tasks[task_name].has_key?(:cache)
