@@ -184,7 +184,7 @@ class Squirrel
     options[:cardinality].each do |field|
       output = `ruby getFields.rb --dump=#{options[:card_file]} --field=#{field} >> #{field}.txt ;
         cat #{field}.txt |sort | uniq -c |sort -n | wc -l;`
-      puts output
+      puts "The number of values in #{field} form file #{ooptions[:card_file]} is #{output}"
     end
   end
 
