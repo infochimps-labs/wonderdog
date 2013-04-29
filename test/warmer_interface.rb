@@ -12,36 +12,25 @@ class WarmerInterface
   end
 
   def add_warmer
-    `curl -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`
+    `curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`
   end
 
   def remove_warmer
-    `curl -XDELETE #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}`
-  end
-
-  def get_warmer_state
-    #TODO! Make sure this works!
-    #Since index.warmer,enable does not defaultly exist must explicitly check true and false
-    index_settings = `curl -XGET '#{@host}:#{@port}/#{@index}/_settings?pretty=true'`
-    if index_settings.include?("\"index.warmer.enabled\" : \"false\",")
-      @warmer_state = "off"
-    elsif index_settings.include?("\"index.warmer.enabled\" : \"true\",")
-      @warmer_state = "on"
-    end
+    `curl -s -XDELETE #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}`
   end
 
   def enable_warmer
-    `curl -XPOST '#{@host}:#{@port}/#{@index}/_close'`
-    `curl -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"true"}'`
-    `curl -XPOST '#{@host}:#{@port}/#{@index}/_open'`
+    `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_close'`
+    `curl -s -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"true"}'`
+    `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_open'`
 
   end
 
   def disable_warmer
     unless @index.nil?
-      `curl -XPOST '#{@host}:#{@port}/#{@index}/_close'`
-      `curl -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"false"}'`
-      `curl -XPOST '#{@host}:#{@port}/#{@index}/_open'`
+      `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_close'`
+      `curl -s -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"false"}'`
+      `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_open'`
     end
   end
 
