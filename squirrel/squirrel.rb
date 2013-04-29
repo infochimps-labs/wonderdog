@@ -182,8 +182,9 @@ class Squirrel
 
   def cardinality(options)
     options[:cardinality].each do |field|
-      `ruby getFields.rb --dump=#{options[:card_file]} --field=#{field} >> #{field}.txt ;
+      output = `ruby getFields.rb --dump=#{options[:card_file]} --field=#{field} >> #{field}.txt ;
         cat #{field}.txt |sort | uniq -c |sort -n | wc -l;`
+      puts output
     end
   end
 
