@@ -104,18 +104,18 @@ class Squirrel
 
   def build_task_controllers
     @some_option_names = %w[dump_index dump_mapping restore_index restore_mapping create_index duplicate_index
-        duplicate_mapping restore_index dump_file cardinality card_file new_warmers_name remove_warmer warmers create_warmer
+        duplicate_mapping restore_index cardinality card_file new_warmers_name remove_warmer warmers create_warmer
         execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index settings
         settings_values]
     #puts "\n"
     #puts @some_option_names.inspect
-    @tasks = %w[backup backup restore restore restore restore duplicate duplicate cardinality cardinality cardinality warmer warmer
+    @tasks = %w[backup backup restore restore restore restore duplicate duplicate cardinality cardinality warmer warmer
                 warmer warmer replay cache cache cache index_settings index_settings index_settings]
     #puts @tasks.inspect
     @base_tasks_params = {:output_dir => @output_dir, :batch_size => @batch_size, :port => @port, :host => @host}
 
     @task_controllers = [@dump_index, @dump_mapping, @restore_index, @restore_mapping, @create_index, @duplicate_index,
-                         @duplicate_mapping, @restore_index, @dump_file, @cardinality, @card_file, @new_warmers_name,
+                         @duplicate_mapping, @restore_index, @cardinality, @card_file, @new_warmers_name,
                          @remove_warmer, @warmers, @create_warmer, @execute_slow_queries, @clear_all_cache,
                          @clear_fielddata, @clear_filter_cache, @settings_index, @settings, @settings_values].zip(@some_option_names, @tasks)
     #puts "\n"
