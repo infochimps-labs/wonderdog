@@ -1,8 +1,10 @@
 #### This is the uber script the arguements you give it decide what happens
 ## squirrel => Standard Query Ultracrepidate Iamatology Ruby Resource for Elasticsearch Labarum ##
 # example commands:
-# clear all caches
+# disable warmers, clear all caches
 #    ruby squirrel.rb --host=localhost --port=9200 --clear_all_cache=true
+#disable warmers, run slow log queries, clear all caches
+#    ruby squirrel.rb --host=localhost --port=9200 --clear_all_cache=true --execute_slow_queries=/var/log/elasticsearch/padraig.log
 
 
 require "configliere"
