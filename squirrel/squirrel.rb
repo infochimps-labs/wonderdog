@@ -14,9 +14,9 @@
 # duplicate files in an index from a dumpfile(duplicate_file)
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --duplicate_file=flight_count_20130405.gz --duplicate_index=eight_flight_count_20130405 --duplicate_mapping=flight_count_20130405_mapping.json --batch_size=100
 # add warmer
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --new_warmers_name=polite_warmer --create_warmer="curl -XGET 'localhost:9200/flight_count_20130408/flight_count/_search?pretty=true&preference=_primary_first&size=0' -d '{"sort" : ["_state", "flight_id","metric", "tb_h", "feature", "seconds", "base_feature", "metric_feature", "cnt", "_score"],"query":{"match_all":{}}}}'"
+#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --new_warmers_name=polite_warmer --warmers_index=flight_count_20130408 --create_warmer="curl -XGET 'localhost:9200/flight_count_20130408/flight_count/_search?pretty=true&preference=_primary_first&size=0' -d '{"sort" : ["_state", "flight_id","metric", "tb_h", "feature", "seconds", "base_feature", "metric_feature", "cnt", "_score"],"query":{"match_all":{}}}}'"
 # remove warmer
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer
+#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130408
 
 
 require "configliere"
@@ -40,6 +40,7 @@ Settings.define :restore_file,                              default: nil,   desc
 Settings.define :cardinality,               :type => Array, default: nil,   description: 'Return the cardinality of the given index, defaults to nil'
 Settings.define :card_file,                                 default: nil,   description: 'The dump file to grab info from when determining cardinality MUST NOT be compressed, defaults to nil'
 Settings.define :warmers,                                   default: nil,   description: 'Use warmers expected values true/false, defaults to nil'
+Settings.define :warmers_index,                             default: nil,   description: 'The index to add the warmer too, remove it from or disable/enable it on, defaults to nil'
 Settings.define :new_warmers_name,                          default: nil,   description: 'Name of warmer to create, defaults to nil'
 Settings.define :create_warmer,                             default: nil,   description: 'Query to create warmer, defaults to nil'
 Settings.define :remove_warmer,                             default: nil,   description: 'Name of warmer to remove, defaults to nil'
@@ -80,24 +81,25 @@ class Squirrel
     @card_file = options[:card_file]
     @warmers = options[:warmers]
 
+    @warmers_index = options[:warmers_index]
     @new_warmers_name = options[:new_warmers_name]
     @create_warmer = options[:create_warmer]
     @remove_warmer = options[:remove_warmer]
     @execute_slow_queries = options[:execute_slow_queries]
-    @batch_size = options[:batch_size]
 
+    @batch_size = options[:batch_size]
     @dump_mapping = options[:dump_mapping]
     @restore_mapping = options[:restore_mapping]
     @duplicate_mapping = options[:duplicate_mapping]
     @host = options[:host]
-    @port = options[:port]
 
+    @port = options[:port]
     @clear_all_cache = options[:clear_all_cache]
     @clear_filter_cache = options[:clear_filter_cache]
     @clear_fielddata = options[:clear_fielddata]
     @settings_index = options[:settings_index]
-    @settings = options[:es_index_settings]
 
+    @settings = options[:es_index_settings]
     @settings_values = options[:es_index_settings_values]
 
   end
@@ -116,19 +118,19 @@ class Squirrel
 
   def build_task_controllers
     @some_option_names = %w[dump_index dump_mapping restore_file restore_index restore_mapping duplicate_file
-        duplicate_index duplicate_mapping cardinality card_file new_warmers_name remove_warmer warmers create_warmer
+        duplicate_index duplicate_mapping cardinality card_file new_warmers_name warmers_index remove_warmer warmers create_warmer
         execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index settings settings_values]
     #puts "\n"
     #puts @some_option_names.inspect
     @tasks = %w[backup backup restore restore restore duplicate duplicate duplicate cardinality cardinality warmer
-                warmer warmer warmer cache cache cache cache index_settings index_settings index_settings]
+                warmer warmer warmer warmer cache cache cache cache index_settings index_settings index_settings]
     #puts @tasks.inspect
     @base_tasks_params = {:output_dir => @output_dir, :batch_size => @batch_size, :port => @port, :host => @host}
 
     @task_controllers = [@dump_index, @dump_mapping, @restore_file, @restore_index, @restore_mapping, @duplicate_file,
                          @duplicate_index, @duplicate_mapping, @cardinality, @card_file, @new_warmers_name,
-                         @remove_warmer, @warmers, @create_warmer, @execute_slow_queries, @clear_all_cache,
-                         @clear_fielddata, @clear_filter_cache, @settings_index, @settings,
+                         @warmers_index, @remove_warmer, @warmers, @create_warmer, @execute_slow_queries,
+                         @clear_all_cache, @clear_fielddata, @clear_filter_cache, @settings_index, @settings,
                          @settings_values].zip(@some_option_names, @tasks)
     puts "\n"
     @task_controllers.each do |pairs|
