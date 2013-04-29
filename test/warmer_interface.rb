@@ -31,32 +31,29 @@ class WarmerInterface
   end
 
   def enable_warmer
-    #get_warmer_state
-    #if @warmer_state == "off"
-      `curl -XPOST '#{@host}:#{@port}/#{@index}/_close'`
-      `curl -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"true"}'`
-      `curl -XPOST '#{@host}:#{@port}/#{@index}/_open'`
-      #@warmer_state = "on"
-    #end
+    `curl -XPOST '#{@host}:#{@port}/#{@index}/_close'`
+    `curl -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"true"}'`
+    `curl -XPOST '#{@host}:#{@port}/#{@index}/_open'`
+
   end
 
   def disable_warmer
-    #get_warmer_state
-    #if @warmer_state == "on"
+    unless @index.nil?
       `curl -XPOST '#{@host}:#{@port}/#{@index}/_close'`
       `curl -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"false"}'`
       `curl -XPOST '#{@host}:#{@port}/#{@index}/_open'`
-      #@warmer_state = "off"
-    #end
+    end
   end
 
   def determine_interaction
-    case command = @action.to_sym
-      when :add_warmer then add_warmer
-      when :remove_warmer then remove_warmer
-      when :enable_warmer then enable_warmer
-      when :disable_warner then disable_warmer
-      else abort "#{command} is not a recognized action for #{self.name}"
+    unless @index.nil? && @host.nil? && @port.nil?
+      case command = @action.to_sym
+        when :add_warmer then add_warmer
+        when :remove_warmer then remove_warmer
+        when :enable_warmer then enable_warmer
+        when :disable_warner then disable_warmer
+        else abort "#{command} is not a recognized action for #{self.name}"
+      end
     end
   end
 end
