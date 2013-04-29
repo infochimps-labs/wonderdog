@@ -29,7 +29,7 @@ Settings.define :create_index,                              default: nil,   desc
 Settings.define :duplicate_index,                           default: nil,   description: 'Duplicate the given index, defaults to nil'
 Settings.define :restore_index,                             default: nil,   description: 'Restore the given index, defaults to nil'
 Settings.define :cardinality,                               default: nil,   description: 'Return the cardinality of the given index, defaults to nil'
-Settings.define :card_file,                                 default: nil,   description: 'The dump file to grab info from when determining cardinality, defaults to nil'
+Settings.define :card_file,                                 default: nil,   description: 'The dump file to grab info from when determining cardinality MUST NOT be compressed, defaults to nil'
 Settings.define :warmers,                                   default: nil,   description: 'Use warmers expected values true/false, defaults to nil'
 Settings.define :new_warmers_name,                          default: nil,   description: 'Name of warmer to create, defaults to nil'
 Settings.define :create_warmer,                             default: nil,   description: 'Query to create warmer, defaults to nil'
