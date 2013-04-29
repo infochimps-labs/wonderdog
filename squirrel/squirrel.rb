@@ -202,7 +202,7 @@ class SQAR
           ESDup.new(options[:output_dir], options).run
         when :cardinality
           cardinality(options)
-          #Cardinality.new(options[:dump_file])
+        #Cardinality.new(options[:dump_file])
         when :warmer
           determine_warmer_action(options)
         when :replay
@@ -210,8 +210,10 @@ class SQAR
         when :cache
           determine_cache_clear(options)
         when :index_settings
-          options[:settings_and_values] = options[:es_index_settings].zip(options[:es_index_settings_values])
-          ChangeESIndexSettings.new(options).run
+          if is_not_nil?(options[:es_index_settings]) && is_not_nil?(options[:es_index_settings_values])
+            options[:settings_and_values] = options[:es_index_settings].zip(options[:es_index_settings_values])
+            ChangeESIndexSettings.new(options).run
+          end
         else abort Settings.help("Must specify either backup, restore, duplicate, cardinality, warmer, replay, cache or index_settings.  Got <#{command}> UPDATE THIS LINE!")
       end
     end
