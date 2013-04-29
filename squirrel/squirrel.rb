@@ -11,8 +11,8 @@
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --card_file=flight_count_20130405 --cardinality=cnt,metric
 # restore an index from a dumpfile
 #    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir="." --restore_file=flight_count_20130405.gz --restore_index=flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json --batch_size=100
-# create a new index from a dumpfile
-#    Ruby squirrel.rb --host=localhost --port=9200 --outpu_dir="." --restore_file=flight_count_20130405.gz --create_index=test_flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json --batch_size=100
+# duplicate files in an index from a dumpfile(duplicate_file)
+#    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir="." --duplicate_file=flight_count_20130405.gz --duplicate_index=eight_flight_count_20130405 --duplicate_mapping=flight_count_20130405_mapping.json --batch_size=100
 
 
 require "configliere"
@@ -28,9 +28,9 @@ Settings.define :output_dir,                                default: '',    desc
 Settings.define :dump_file,                                 default: nil,   description: 'The name of the dumpfile to use, default is nil'
 Settings.define :dump_index,                                default: nil,   description: 'Create dump of the given index, default is nil'
 Settings.define :query,                                     default: nil,   description: 'Query to use in order to limit the data extracted from the index, default nil'
-Settings.define :restore_index,                             default: nil,   description: 'Restore the given index from --dump_file, default is nil'
-Settings.define :create_index,                              default: nil,   description: 'Create an index of the given name, default is nil'
+Settings.define :restore_index,                             default: nil,   description: 'Restore the given index from --dump_file, it creates a new index if the given index does not exist, default is nil'
 Settings.define :duplicate_index,                           default: nil,   description: 'Duplicate the given index, defaults to nil'
+Settings.define :duplicate_file,                            default: nil,   description: 'File to pull duplicated files from, defaults to nil'
 Settings.define :restore_index,                             default: nil,   description: 'Restore the given index, defaults to nil'
 Settings.define :restore_file,                              default: nil,   description: 'Dump file to use when restoring, defaults to nil'
 Settings.define :cardinality,               :type => Array, default: nil,   description: 'Return the cardinality of the given index, defaults to nil'
@@ -67,10 +67,10 @@ class Squirrel
     @dump_file = options[:dump_file]
     @dump_index = options[:dump_index]
     @restore_index = options[:restore_index]
-    @create_index = options[:create_index]
     @duplicate_index = options[:duplicate_index]
-
     @restore_file = options[:restore_file]
+
+    @duplicate_file = options[:duplicate_file]
     @restore_index = options[:restore_index]
     @cardinality = options[:cardinality]
     @card_file = options[:card_file]
@@ -111,21 +111,20 @@ class Squirrel
   end
 
   def build_task_controllers
-    @some_option_names = %w[dump_index dump_mapping restore_file restore_index restore_mapping create_index
-        duplicate_index duplicate_mapping cardinality card_file new_warmers_name remove_warmer warmers
-        create_warmer execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index settings
-        settings_values]
+    @some_option_names = %w[dump_index dump_mapping restore_file restore_index restore_mapping duplicate_file
+        duplicate_index duplicate_mapping cardinality card_file new_warmers_name remove_warmer warmers create_warmer
+        execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index settings settings_values]
     #puts "\n"
     #puts @some_option_names.inspect
-    @tasks = %w[backup backup restore restore restore restore restore duplicate duplicate cardinality cardinality warmer
+    @tasks = %w[backup backup restore restore restore restore duplicate duplicate duplicate cardinality cardinality warmer
                 warmer warmer warmer replay cache cache cache index_settings index_settings index_settings]
     #puts @tasks.inspect
     @base_tasks_params = {:output_dir => @output_dir, :batch_size => @batch_size, :port => @port, :host => @host}
 
-    @task_controllers = [@dump_index, @dump_mapping, @restore_file, @restore_index, @restore_mapping, @create_index,
-                         @duplicate_index, @duplicate_mapping, @cardinality, @card_file,
-                         @new_warmers_name, @remove_warmer, @warmers, @create_warmer, @execute_slow_queries,
-                         @clear_all_cache, @clear_fielddata, @clear_filter_cache, @settings_index, @settings,
+    @task_controllers = [@dump_index, @dump_mapping, @restore_file, @restore_index, @restore_mapping, @duplicate_file,
+                         @duplicate_index, @duplicate_mapping, @cardinality, @card_file, @new_warmers_name,
+                         @remove_warmer, @warmers, @create_warmer, @execute_slow_queries, @clear_all_cache,
+                         @clear_fielddata, @clear_filter_cache, @settings_index, @settings,
                          @settings_values].zip(@some_option_names, @tasks)
     puts "\n"
     @task_controllers.each do |pairs|
