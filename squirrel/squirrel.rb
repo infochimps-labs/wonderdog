@@ -8,7 +8,7 @@
 # get backup an index aka generate a dumpfile
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --dump_index=flight_count_20130405 --batch_size=100 --mapping_file=flight_count_20130405_mapping.json
 # get the cardinatlity of a dumpfile
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --
+#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --dump-file=flight_count_20130405 --cardinality=cnt.metric
 
 require "configliere"
 require_relative "../test/esbackup_stripped.rb"
@@ -180,7 +180,7 @@ class Squirrel
   end
 
   def cardinality(options)
-    options[:fields].each do |field|
+    options[:cardinality].each do |field|
       `ruby getFields.rb --dump=#{options[:card_file]} --field=#{field} >> #{field}.txt ;
         cat #{field}.txt |sort | uniq -c |sort -n | wc -l;`
     end
