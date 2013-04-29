@@ -205,7 +205,7 @@ class SQAR
         when :warmer
           determine_warmer_action(options)
         when :replay
-          Replay.new(options[:execute_slow_queries], options[:host], options[:port])
+          Replay.new(options[:execute_slow_queries], options[:host], options[:port]).run
         when :cache
           determine_cache_clear(options)
         when :index_settings
