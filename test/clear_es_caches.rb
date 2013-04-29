@@ -14,7 +14,7 @@ class ClearESCaches
   end
 
   def clear_fielddata
-    puts "/home/missy/GitProjects/wonderdog/test/clear_es_caches.rb"
+    puts " `curl -s -XPOST 'http://#{@host}:#{@port}/_all/_cache/clear?field_data=true&filter=false&bloom=true' ; echo`"
     `curl -s -XPOST 'http://#{@host}:#{@port}/_all/_cache/clear?field_data=true&filter=false&bloom=true' ; echo`
   end
 
