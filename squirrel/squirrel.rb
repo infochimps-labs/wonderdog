@@ -50,7 +50,7 @@ Settings.define :es_index_settings_values,  :type => Array, default: [],    desc
 Settings.resolve!
 
 
-class SQAR
+class Squirrel
 
   def initialize(options = {})
     ##The next two lines are necessary if you want to run without configliere, as they enforce the non-nil defaults
@@ -233,5 +233,5 @@ class SQAR
   end
 end
 
-SQAR.new(Settings.to_hash).run
+Squirrel.new(Settings.to_hash).run
 
