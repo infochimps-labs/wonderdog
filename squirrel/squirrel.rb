@@ -103,7 +103,7 @@ class SQAR
   def build_task_controllers
     @some_option_names = %w[dump_index dump_mapping restore_index restore_mapping create_index duplicate_index
         duplicate_mapping restore_index cardinality new_warmers_name remove_warmer warmers create_warmer
-        execute_slow_queries clear_all_cache clear_filter_cache clear_fielddata settings_index settings
+        execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index settings
         settings_values]
     #puts "\n"
     #puts @some_option_names.inspect
@@ -125,7 +125,6 @@ class SQAR
 
   def add_task?(var, var_name, task_name)
     if is_not_nil?(var) && var != []
-      puts "var: #{var}, var_name: #{var_name}, task_name: #{task_name}"
       @execute_tasks[task_name] ||= {}
       @execute_tasks[task_name][var_name.to_sym] = var
       unless @execute_tasks[task_name].has_key?(:cache)
