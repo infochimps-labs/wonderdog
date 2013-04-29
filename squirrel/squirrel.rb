@@ -10,9 +10,9 @@
 # get the cardinatlity of a dumpfile(card_file)
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --card_file=flight_count_20130405 --cardinality=cnt,metric
 # restore an index from a dumpfile
-#    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir="." --restore_file=flight_count_20130405.gz --restore_index=flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json --batch_size=100
+#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --restore_file=flight_count_20130405.gz --restore_index=flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json --batch_size=100
 # duplicate files in an index from a dumpfile(duplicate_file)
-#    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir="." --duplicate_file=flight_count_20130405.gz --duplicate_index=eight_flight_count_20130405 --duplicate_mapping=flight_count_20130405_mapping.json --batch_size=100
+#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --duplicate_file=flight_count_20130405.gz --duplicate_index=eight_flight_count_20130405 --duplicate_mapping=flight_count_20130405_mapping.json --batch_size=100
 
 
 require "configliere"
