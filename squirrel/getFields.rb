@@ -10,6 +10,7 @@ Settings.define :field
 Settings.resolve!
 
 def get_value_counts(dump, field)
+  puts dump, field
   File.open(dump).each do |line|
     record = MultiJson.load(line)
     puts record[field]
