@@ -35,7 +35,7 @@ class WarmerInterface
   end
 
   def determine_interaction
-    puts @index
+    puts @index.inspect
     unless @index.nil? && @host.nil? && @port.nil?
       case command = @action.to_sym
         when :add_warmer then add_warmer
