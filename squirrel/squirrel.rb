@@ -158,6 +158,7 @@ class Squirrel
   end
 
   def determine_warmer_action(options = {})
+    options[:index] = options[:warmers_index]
     if is_not_nil?(options[:remove_warmer])
       options[:action] = "remove_warmer"
       options[:warmer_name] = options[:remove_warmer]
