@@ -54,9 +54,7 @@ class Squirrel
 
   def initialize(options = {})
     ##The next two lines are necessary if you want to run without configliere, as they enforce the non-nil defaults
-    #defaults = {:output_dir => '', :cache => true, :warmers => false, :temperature => 'cold', :refresh_interval => -1,
-    # :batch_size => 100, :port => 9200, "clear_all_cache" => false, "clear_filter_cache" => false,
-    # "clear_fielddata" => false}
+    #defaults = {:output_dir => '', :port => 9200}
     #options = defaults.merge(options)
 
     @output_dir = options[:output_dir]
