@@ -13,6 +13,7 @@ class WarmerInterface
 
   def add_warmer
     puts "`curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`"
+    puts "\n"
     output = `curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`
     puts output
   end
