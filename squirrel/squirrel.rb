@@ -185,6 +185,8 @@ class SQAR
 
   def task_caller
     @execute_tasks.each do |task, options|
+      puts task
+      puts options.inspect
       case command = task.to_sym
         when :restore
           options[:index] = options[:restore_index]
