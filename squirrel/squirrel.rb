@@ -202,11 +202,11 @@ class Squirrel
         when :restore
           options[:index] = options[:restore_index]
           options[:mappings] = options[:restore_mapping]
-          ESRestore.new(options[:output_dir], options).run
+          ESRestore.new(options[:restore_file], options).run
         when :backup
           options[:index] = options[:dump_index]
           options[:mappings] = options[:dump_mapping]
-          ESBackup.new(options[:restore_file], options).run
+          ESBackup.new(options[:output_dir], options).run
         when :duplicate
           options[:index] = options[:duplicate_index]
           options[:mappings] = options[:duplicate_mapping]
