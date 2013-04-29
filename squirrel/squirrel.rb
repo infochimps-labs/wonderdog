@@ -220,7 +220,7 @@ class SQAR
   def run
     build_task_controllers
     determine_tasks
-    #task_caller
+    task_caller
   end
 end
 
