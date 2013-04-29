@@ -1,6 +1,8 @@
 #### This is the uber script the arguements you give it decide what happens
 ## squirrel => Standard Query Ultracrepidate Iamatology Ruby Resource for Elasticsearch Labarum ##
-
+# example commands:
+# clear all caches
+#    ruby squirrel.rb --host=localhost --port=9200 --clear_all_cache=true
 
 
 require "configliere"
