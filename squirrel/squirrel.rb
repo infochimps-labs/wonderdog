@@ -169,7 +169,7 @@ class Squirrel
         puts "enabling warmers"
         options[:action] = "enable_warmer"
         #WarmerInterface.new(options).enable_warmer
-      else
+      elsif options[:warmers] == false
         puts "disabling warmers"
         options[:action] = "disable_warmer"
         #WarmerInterface.new(options).disable_warmer
