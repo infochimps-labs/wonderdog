@@ -3,6 +3,7 @@ require 'httparty'
 
 class WarmerInterface
   def initialize(options = {})
+    puts options.inspect
     @host = options[:host]
     @port = options[:port]
     @query = MultiJson.dump(options[:query])
