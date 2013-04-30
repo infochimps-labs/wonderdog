@@ -93,26 +93,26 @@ class Squirrel
 
     @warmers_index = options[:warmers_index]
     @new_warmers_name = options[:new_warmers_name]
-    unless @create_warmer.nil?
-      @create_warmer = MultiJson.load(options[:create_warmer])
-    end
     @remove_warmer = options[:remove_warmer]
     @execute_slow_queries = options[:execute_slow_queries]
-
     @batch_size = options[:batch_size]
+
     @dump_mapping = options[:dump_mapping]
     @restore_mapping = options[:restore_mapping]
     @duplicate_mapping = options[:duplicate_mapping]
     @host = options[:host]
-
     @port = options[:port]
+
     @clear_all_cache = options[:clear_all_cache]
     @clear_filter_cache = options[:clear_filter_cache]
     @clear_fielddata = options[:clear_fielddata]
     @settings_index = options[:settings_index]
-
     @es_index_settings = options[:es_index_settings]
+
     @es_index_settings_values = options[:es_index_settings_values]
+    unless @create_warmer.nil?
+      @create_warmer = MultiJson.load(options[:create_warmer])
+    end
 
   end
 
