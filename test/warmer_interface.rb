@@ -14,7 +14,7 @@ class WarmerInterface
 
   def add_warmer
     url = "http://#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}"
-    body = MultiJson.load(@query)
+    body = MultiJson.decode(@query)
     puts url
     puts body.inspect
     response = HTTParty.put(url, {:body => body})
