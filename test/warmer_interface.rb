@@ -25,6 +25,7 @@ class WarmerInterface
   end
 
   def remove_warmer
+    puts "removing warmer #{@warmer_name}"
     response = `curl -s -XDELETE #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}`
     puts response
   end
