@@ -1,4 +1,5 @@
 require 'multi_json'
+require 'httparty'
 
 class WarmerInterface
   def initialize(options = {})
@@ -12,10 +13,13 @@ class WarmerInterface
   end
 
   def add_warmer
-    puts "`curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`"
+    url = "#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}"
+    response = HTTParty.put(url, {:body => @query})
+    #puts "`curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`"
     puts "\n"
-    output = `curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`
-    puts output
+    puts response
+    #output = `curl -s -XPUT #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name} -d '#{@query}'`
+    #puts output
   end
 
   def remove_warmer
