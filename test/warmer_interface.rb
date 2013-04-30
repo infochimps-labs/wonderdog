@@ -13,7 +13,7 @@ class WarmerInterface
   end
 
   def add_warmer
-    url = "#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}"
+    url = "http://#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}"
     response = HTTParty.put(url, {:body => @query})
     #puts "`curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}'`"
     puts "\n"
