@@ -34,7 +34,7 @@ require_relative "../squirrel/esbackup_stripped.rb"
 require_relative "../squirrel/replay.rb"
 require_relative "../test/warmer_interface.rb"
 require_relative "../squirrel/clear_es_caches.rb"
-require_relative "../test/change_es_index_settings.rb"
+require_relative "../squirrel/change_es_index_settings.rb"
 
 Settings.use :commandline
 Settings.use :config_block
