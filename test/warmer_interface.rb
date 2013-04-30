@@ -33,13 +33,13 @@ class WarmerInterface
   def enable_warmer
     puts "closing #{@index}"
     response = `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_close'`
-    #puts response
+    puts response
     puts "enabling warmer"
     response = `curl -s -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"true"}'`
-    #puts response
+    puts response
     puts "opening #{@index}"
     response = `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_open'`
-    #puts response
+    puts response
   end
 
   def disable_warmer
