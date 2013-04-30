@@ -13,13 +13,13 @@ class WarmerInterface
   end
 
   def add_warmer
-    #url = "#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}"
-    #response = HTTParty.put(url, {:body => @query})
-    puts "`curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}'`"
+    url = "#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}"
+    response = HTTParty.put(url, {:body => @query})
+    #puts "`curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}'`"
     puts "\n"
-    #puts response
-    output = %x(curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}')
-    puts output
+    puts response
+    #output = %x(curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}')
+    #puts output
   end
 
   def remove_warmer
