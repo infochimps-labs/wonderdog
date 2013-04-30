@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-require 'configliere'
-require 'gorillib'
 require 'json'
 require 'time'
 
@@ -22,18 +20,6 @@ require 'time'
 ########################################################################################################################
 @slowlog_lines = []
 @metadata_hash = {}
-
-########################################################################################################################
-# Parse command line;                                                                                                  #
-# * Get logfile                                                                                                        #
-########################################################################################################################
-
-#Settings.use :commandline
-#Settings.use :config_block
-#Settings.define :logfile
-#Settings.define :host
-#Settings.define :port
-#Settings.resolve!
 
 ########################################################################################################################
 # Parse logfile, grab:                                                                                                 #
