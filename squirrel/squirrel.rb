@@ -249,6 +249,8 @@ class Squirrel
         when :index_settings
           if is_not_nil?(options[:es_index_settings]) && is_not_nil?(options[:es_index_settings_values])
             options[:settings_and_values] = options[:es_index_settings].zip(options[:es_index_settings_values])
+            puts options.inspect
+            puts "\n"
             ChangeESIndexSettings.new(options).run
           end
         else abort Settings.help("Must specify either backup, restore, duplicate, cardinality, warmer, replay, cache or index_settings.  Got <#{command}> UPDATE THIS LINE!")
