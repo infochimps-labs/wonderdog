@@ -145,7 +145,7 @@ class Squirrel
   end
 
   def add_task?(var, var_name, task_name)
-    unless var.nil? && var == []
+    unless var.nil? || var == []
       puts var
       @execute_tasks[task_name] ||= {}
       @execute_tasks[task_name][var_name.to_sym] = var
