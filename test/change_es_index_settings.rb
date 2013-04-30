@@ -13,7 +13,6 @@ class ChangeESIndexSettings
 
   def run
     @settings_and_values.each do |setting, value|
-      puts "setting: #{@setting} and value: #{@value}"
       change_setting(setting, value)
     end
   end
