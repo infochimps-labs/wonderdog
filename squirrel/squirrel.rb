@@ -84,7 +84,7 @@ class Squirrel
 
     @warmers_index = options[:warmers_index]
     @new_warmers_name = options[:new_warmers_name]
-    @create_warmer = MultiJson.load(options[:create_warmer]) rescue nil
+    @create_warmer = MultiJson.load(options[:create_warmer]) rescue puts "query parsing failed"
     @remove_warmer = options[:remove_warmer]
     @execute_slow_queries = options[:execute_slow_queries]
 
