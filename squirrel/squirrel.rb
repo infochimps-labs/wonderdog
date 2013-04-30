@@ -25,7 +25,7 @@
 # remove warmer
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130405
 # change index settings
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --settings_index=flight_count_20130405 --es_index_settings=refresh_interval --es_index_settings_values=-1
+#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --settings_index=flight_count_20130405 --es_index_settings=refresh_interval,refresh_interval --es_index_settings_values=-1,0
 
 
 require "configliere"
