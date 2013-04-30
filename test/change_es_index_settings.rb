@@ -7,7 +7,7 @@ class ChangeESIndexSettings
   end
 
   def change_setting(setting, value)
-    `curl -XPUT 'http://#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{ "#{setting}":"#{value}" }'`
+    `curl -s -XPUT 'http://#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{ "#{setting}":"#{value}" }'`
   end
 
   def run
