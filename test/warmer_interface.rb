@@ -57,6 +57,8 @@ class WarmerInterface
         when :disable_warmer then disable_warmer
         else abort "#{command} is not a recognized action for determine_interaction from warmers_interface"
       end
+    else
+      puts "index, host and port are required to interact with the warmers"
     end
   end
 end
