@@ -27,31 +27,31 @@ class WarmerInterface
   def remove_warmer
     puts "removing warmer #{@warmer_name}"
     response = `curl -s -XDELETE #{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}`
-    puts response
+    #puts response
   end
 
   def enable_warmer
     puts "closing #{@index}"
     response = `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_close'`
-    puts response
+    #puts response
     puts "enabling warmer"
     response = `curl -s -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"true"}'`
-    puts response
+    #puts response
     puts "opening #{@index}"
     response = `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_open'`
-    puts response
+    #puts response
   end
 
   def disable_warmer
     puts "closing #{@index}"
     response = `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_close'`
-    puts response
+    #puts response
     puts "disabling warmer"
     response = `curl -s -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"false"}'`
-    puts response
+    #puts response
     puts "opening #{@index}"
     response =`curl -s -XPOST '#{@host}:#{@port}/#{@index}/_open'`
-    puts response
+    #puts response
   end
 
   def determine_interaction
