@@ -18,7 +18,7 @@ class WarmerInterface
     #puts url
     #puts body.inspect
     #response = HTTParty.put(url, {:body => @query})
-    puts "`curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}'`".inspect
+    puts "`curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}'`"
     puts "\n"
     #puts response
     output = %x(curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}')
