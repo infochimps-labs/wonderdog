@@ -13,16 +13,14 @@ class WarmerInterface
   end
 
   def add_warmer
-    #url = "http://#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}"
-    #body = MultiJson.decode(@query)
-    #puts url
-    #puts body.inspect
-    #response = HTTParty.put(url, {:body => @query})
-    puts "`curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}'`"
-    puts "\n"
-    #puts response
-    output = %x(curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}')
-    puts output
+    url = "http://#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}"
+    puts url
+    response = HTTParty.put(url, {:body => @query})
+    #puts "`curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}'`"
+    #puts "\n"
+    puts response
+    #output = %x(curl -s -XPUT '#{@host}:#{@port}/#{@index}/_warmer/#{@warmer_name}' -d '#{@query}')
+    #puts output
   end
 
   def remove_warmer
