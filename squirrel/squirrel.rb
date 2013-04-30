@@ -31,7 +31,7 @@ require "configliere"
 require "multi_json"
 require_relative "../squirrel/esbackup_stripped.rb"
 require_relative "../squirrel/replay.rb"
-require_relative "../test/warmer_interface.rb"
+require_relative "../squirrel/warmer_interface.rb"
 require_relative "../squirrel/clear_es_caches.rb"
 require_relative "../squirrel/change_es_index_settings.rb"
 
