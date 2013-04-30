@@ -173,25 +173,26 @@ class Squirrel
       puts "removing warmer"
       options[:action] = "remove_warmer"
       options[:warmer_name] = options[:remove_warmer]
-      WarmerInterface.new(options).remove_warmer
+      #WarmerInterface.new(options).remove_warmer
     else
       if options[:warmer]
         puts "enabling warmers"
         options[:action] = "enable_warmer"
-        WarmerInterface.new(options).enable_warmer
+        #WarmerInterface.new(options).enable_warmer
       else
         puts "disabling warmers"
         options[:action] = "disable_warmer"
-        WarmerInterface.new(options).disable_warmer
+        #WarmerInterface.new(options).disable_warmer
       end
       unless options[:new_warmers_name].nil?
         puts "adding warmer"
         options[:action] = "add_warmer"
         options[:warmer_name] = options[:new_warmers_name]
         options[:query] = options[:create_warmer]
-        WarmerInterface.new(options).add_warmer
+        #WarmerInterface.new(options).add_warmer
       end
     end
+    WarmerInterface.new(options).determine_interaction
   end
 
   def determine_cache_clear(options = {})

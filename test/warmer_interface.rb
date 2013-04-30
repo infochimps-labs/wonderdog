@@ -39,14 +39,12 @@ class WarmerInterface
   end
 
   def disable_warmer
-    unless @index.nil?
       response = `curl -s -XPOST '#{@host}:#{@port}/#{@index}/_close'`
       puts response
       response = `curl -s -XPUT '#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{"index.warmer.enabled":"false"}'`
       puts response
       response =`curl -s -XPOST '#{@host}:#{@port}/#{@index}/_open'`
       puts response
-    end
   end
 
   def determine_interaction
