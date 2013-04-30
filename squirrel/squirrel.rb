@@ -130,8 +130,9 @@ class Squirrel
 
   def build_task_controllers
     @some_option_names = %w[dump_index dump_mapping restore_file restore_index restore_mapping duplicate_file
-        duplicate_index duplicate_mapping cardinality card_file new_warmers_name warmers_index remove_warmer warmers create_warmer
-        execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index settings settings_values]
+        duplicate_index duplicate_mapping cardinality card_file new_warmers_name warmers_index remove_warmer warmers
+        create_warmer execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index es_settings
+        es_settings_values]
     #puts "\n"
     #puts @some_option_names.inspect
     @tasks = %w[backup backup restore restore restore duplicate duplicate duplicate cardinality cardinality warmer
@@ -247,6 +248,7 @@ class Squirrel
         when :cache
           determine_cache_clear(options)
         when :index_settings
+
           if is_not_nil?(options[:es_index_settings]) && is_not_nil?(options[:es_index_settings_values])
             options[:settings_and_values] = options[:es_index_settings].zip(options[:es_index_settings_values])
             puts options.inspect
