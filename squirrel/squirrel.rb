@@ -175,7 +175,7 @@ class Squirrel
       options[:warmer_name] = options[:remove_warmer]
       #WarmerInterface.new(options).remove_warmer
     else
-      if options[:warmer]
+      if options[:warmers]
         puts "enabling warmers"
         options[:action] = "enable_warmer"
         #WarmerInterface.new(options).enable_warmer
