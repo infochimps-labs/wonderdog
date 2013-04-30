@@ -239,7 +239,7 @@ class Squirrel
         when :cache
           determine_cache_clear(options)
         when :index_settings
-          if is_not_nil?(options[:es_index_settings]) && is_not_nil?(options[:es_index_settings_values])
+          unless options[:es_index_settings].nil? || options[:es_index_settings_values].nil?
             options[:settings_and_values] = options[:es_index_settings].zip(options[:es_index_settings_values])
             ChangeESIndexSettings.new(options).run
           end
