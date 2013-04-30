@@ -55,7 +55,7 @@ class WarmerInterface
         when :remove_warmer then remove_warmer
         when :enable_warmer then enable_warmer
         when :disable_warner then disable_warmer
-        else abort "#{command} is not a recognized action for #{self.name}"
+        else abort "#{command} is not a recognized action for determine_interaction from warmers_interface"
       end
     end
   end
