@@ -15,8 +15,15 @@
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --duplicate_file=flight_count_20130405.gz --duplicate_index=eight_flight_count_20130405 --duplicate_mapping=flight_count_20130405_mapping.json --batch_size=100
 # add warmer #TODO! Parse --create_warmer correctly so that this functionality actually works
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --new_warmers_name=polite_warmer --warmers_index=flight_count_20130408 --create_warmer='{"sort" : ["_state", "flight_id","metric", "tb_h", "feature", "seconds", "base_feature", "metric_feature", "cnt", "_score"],"query":{"match_all":{}}}'
+#    curl -s -XPUT 'localhost:9200/flight_count_20130405/_warmer/polite_warmer' -d '{"sort":["_state","flight_id","metric","tb_h","feature","seconds","base_feature","metric_feature","cnt","_score"],"query":{"match_all":{}}}'
 # remove warmer
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130408
+# disable warmers
+#    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir-"." --warmers=false
+# enable warmers
+#
+# change index settings
+#
 
 
 require "configliere"
@@ -163,18 +170,22 @@ class Squirrel
   def determine_warmer_action(options = {})
     options[:index] = options[:warmers_index]
     if is_not_nil?(options[:remove_warmer])
+      puts "removing warmer"
       options[:action] = "remove_warmer"
       options[:warmer_name] = options[:remove_warmer]
       WarmerInterface.new(options).remove_warmer
     else
       if options[:warmer]
+        puts "enabling warmers"
         options[:action] = "enable_warmer"
         WarmerInterface.new(options).enable_warmer
       else
+        puts "disabling warmers"
         options[:action] = "disable_warmer"
         WarmerInterface.new(options).disable_warmer
       end
       unless options[:new_warmers_name].nil?
+        puts "adding warmer"
         options[:action] = "add_warmer"
         options[:warmer_name] = options[:new_warmers_name]
         options[:query] = options[:create_warmer]
