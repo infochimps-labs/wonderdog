@@ -5,7 +5,7 @@ class WarmerInterface
   def initialize(options = {})
     @host = options[:host]
     @port = options[:port]
-    @query = options[:query]
+    @query = MultiJson.dump(options[:query])
     @warmer_name = options[:warmer_name]
     @index = options[:index]
     @action = options[:action]
