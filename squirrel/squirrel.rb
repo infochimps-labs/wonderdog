@@ -84,7 +84,9 @@ class Squirrel
 
     @warmers_index = options[:warmers_index]
     @new_warmers_name = options[:new_warmers_name]
-    @create_warmer = MultiJson.load(options[:create_warmer])
+    unless @create_warmer.nil?
+      @create_warmer = MultiJson.load(options[:create_warmer])
+    end
     @remove_warmer = options[:remove_warmer]
     @execute_slow_queries = options[:execute_slow_queries]
 
