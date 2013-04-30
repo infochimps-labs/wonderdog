@@ -34,7 +34,7 @@ curl -XPUT 'localhost:9200/flight_count_20130408/_settings?pretty=true' -d '{"in
 #enable warmer #have to have index closed to change this
 curl -XPUT 'localhost:9200/flight_count_20130408/_settings?pretty=true' -d '{"index.warmer.enabled":"true"}'
 #get warmer
-curl -XGET localhost:9200/flight_count_20130408/_warmer/poliet_warmer?pretty=true 
+curl -XGET localhost:9200/flight_count_20130405/_warmer/polite_warmer?pretty=true
 #close index
 curl -XPOST 'localhost:9200/flight_count_20130408/_close'
 #open index
