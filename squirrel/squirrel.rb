@@ -116,10 +116,6 @@ class Squirrel
 
   end
 
-  def is_not_nil?(param)
-    !param.nil?
-  end
-
   def build_task_controllers
     @some_option_names = %w[dump_index dump_mapping restore_file restore_index restore_mapping duplicate_file
         duplicate_index duplicate_mapping cardinality card_file new_warmers_name warmers_index remove_warmer warmers
