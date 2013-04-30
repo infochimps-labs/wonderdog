@@ -13,9 +13,8 @@
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --restore_file=flight_count_20130405.gz --restore_index=flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json --batch_size=100
 # duplicate files in an index from a dumpfile(duplicate_file)
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --duplicate_file=flight_count_20130405.gz --duplicate_index=eight_flight_count_20130405 --duplicate_mapping=flight_count_20130405_mapping.json --batch_size=100
-# add warmer #TODO! Parse --create_warmer correctly so that this functionality actually works
+# add warmer
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --new_warmers_name=polite_warmer --warmers_index=flight_count_20130408 --create_warmer='{"sort" : ["_state", "flight_id","metric", "tb_h", "feature", "seconds", "base_feature", "metric_feature", "cnt", "_score"],"query":{"match_all":{}}}'
-#    curl -s -XPUT 'localhost:9200/flight_count_20130405/_warmer/polite_warmer' -d '{"sort":["_state","flight_id","metric","tb_h","feature","seconds","base_feature","metric_feature","cnt","_score"],"query":{"match_all":{}}}'
 # remove warmer
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130408
 # disable warmers
