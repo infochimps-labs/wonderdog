@@ -120,13 +120,13 @@ class Squirrel
     !param.nil?
   end
 
-  def is_bool?(param)
-    if !!param = param
-      return true
-    else
-      return false
-    end
-  end
+  #def is_bool?(param)
+  #  if !!param = param
+  #    return true
+  #  else
+  #    return false
+  #  end
+  #end
 
   def build_task_controllers
     @some_option_names = %w[dump_index dump_mapping restore_file restore_index restore_mapping duplicate_file
