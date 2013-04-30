@@ -111,8 +111,8 @@ class Squirrel
     @clear_fielddata = options[:clear_fielddata]
     @settings_index = options[:settings_index]
 
-    @settings = options[:es_index_settings]
-    @settings_values = options[:es_index_settings_values]
+    @es_index_settings = options[:es_index_settings]
+    @es_index_settings_values = options[:es_index_settings_values]
 
   end
 
@@ -131,8 +131,8 @@ class Squirrel
   def build_task_controllers
     @some_option_names = %w[dump_index dump_mapping restore_file restore_index restore_mapping duplicate_file
         duplicate_index duplicate_mapping cardinality card_file new_warmers_name warmers_index remove_warmer warmers
-        create_warmer execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index es_settings
-        es_settings_values]
+        create_warmer execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index
+        es_index_settings es_index_settings_values]
     #puts "\n"
     #puts @some_option_names.inspect
     @tasks = %w[backup backup restore restore restore duplicate duplicate duplicate cardinality cardinality warmer
@@ -143,8 +143,8 @@ class Squirrel
     @task_controllers = [@dump_index, @dump_mapping, @restore_file, @restore_index, @restore_mapping, @duplicate_file,
                          @duplicate_index, @duplicate_mapping, @cardinality, @card_file, @new_warmers_name,
                          @warmers_index, @remove_warmer, @warmers, @create_warmer, @execute_slow_queries,
-                         @clear_all_cache, @clear_fielddata, @clear_filter_cache, @settings_index, @settings,
-                         @settings_values].zip(@some_option_names, @tasks)
+                         @clear_all_cache, @clear_fielddata, @clear_filter_cache, @settings_index, @es_index_settings,
+                         @es_index_settings_values].zip(@some_option_names, @tasks)
     puts "\n"
     @task_controllers.each do |pairs|
       puts pairs.inspect
