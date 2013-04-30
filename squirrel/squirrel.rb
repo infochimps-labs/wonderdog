@@ -242,6 +242,8 @@ class Squirrel
           unless options[:es_index_settings].nil? || options[:es_index_settings_values].nil?
             options[:settings_and_values] = options[:es_index_settings].zip(options[:es_index_settings_values])
             ChangeESIndexSettings.new(options).run
+          else
+            puts "both --es_index_settings and --es_index_settings_values are required to change index settings"
           end
         else abort Settings.help("Must specify either backup, restore, duplicate, cardinality, warmer, replay, cache or index_settings.  Got <#{command}> UPDATE THIS LINE!")
       end
