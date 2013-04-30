@@ -19,7 +19,7 @@
 # remove warmer
 #    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130408
 # disable warmers
-#    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir-"." --warmers=false
+#    ruby squirrel.rb --host=localhost --port=9200 --outpu_dir-"." --warmers=false --warmers_index=flight_count_20130405
 # enable warmers
 #
 # change index settings
