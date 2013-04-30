@@ -7,6 +7,7 @@ class ChangeESIndexSettings
   end
 
   def change_setting(setting, value)
+    puts "changing setting #{setting} to value #{@value}"
     `curl -s -XPUT 'http://#{@host}:#{@port}/#{@index}/_settings?pretty=true' -d '{ "#{setting}":"#{value}" }'`
   end
 
