@@ -20,6 +20,7 @@
 
 
 require "configliere"
+require "multi_json"
 require_relative "../test/esbackup_stripped.rb"
 require_relative "../squirrel/replay.rb"
 require_relative "../test/warmer_interface.rb"
@@ -83,7 +84,7 @@ class Squirrel
 
     @warmers_index = options[:warmers_index]
     @new_warmers_name = options[:new_warmers_name]
-    @create_warmer = options[:create_warmer]
+    @create_warmer = MultiJson.load(options[:create_warmer]) rescue nil
     @remove_warmer = options[:remove_warmer]
     @execute_slow_queries = options[:execute_slow_queries]
 
