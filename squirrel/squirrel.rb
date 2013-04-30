@@ -110,7 +110,7 @@ class Squirrel
     @es_index_settings = options[:es_index_settings]
 
     @es_index_settings_values = options[:es_index_settings_values]
-    unless @create_warmer.nil?
+    unless options[:create_warmer].nil?
       @create_warmer = MultiJson.load(options[:create_warmer])
     end
 
