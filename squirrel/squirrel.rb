@@ -107,12 +107,8 @@ Settings.resolve!
 class Squirrel
 
   def initialize(command, options = {})
-    ##The next two lines are necessary if you want to run without configliere, as they enforce the non-nil defaults
-    #defaults = {:output_dir => '', :port => 9200}
-    #options = defaults.merge(options)
     @command = command
     @options = options
-
   end
 
   def determine_warmer_action(options = {})
