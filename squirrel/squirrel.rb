@@ -112,86 +112,8 @@ class Squirrel
     #options = defaults.merge(options)
     @command = command
     @options = options
-    #@output_dir = options[:output_dir]
-    #
-    #@dump_file = options[:dump_file]
-    #@dump_index = options[:dump_index]
-    #@restore_index = options[:restore_index]
-    #@duplicate_index = options[:duplicate_index]
-    #@restore_file = options[:restore_file]
-    #
-    #@duplicate_file = options[:duplicate_file]
-    #@restore_index = options[:restore_index]
-    #@cardinality = options[:cardinality]
-    #@card_file = options[:card_file]
-    #@warmers = options[:warmers]
-    #
-    #@warmers_index = options[:warmers_index]
-    #@new_warmers_name = options[:new_warmers_name]
-    #@remove_warmer = options[:remove_warmer]
-    #@execute_slow_queries = options[:execute_slow_queries]
-    #@batch_size = options[:batch_size]
-    #
-    #@dump_mapping = options[:dump_mapping]
-    #@restore_mapping = options[:restore_mapping]
-    #@duplicate_mapping = options[:duplicate_mapping]
-    #@host = options[:host]
-    #@port = options[:port]
-    #
-    #@clear_all_cache = options[:clear_all_cache]
-    #@clear_filter_cache = options[:clear_filter_cache]
-    #@clear_fielddata = options[:clear_fielddata]
-    #@settings_index = options[:settings_index]
-    #@es_index_settings = options[:es_index_settings]
-    #
-    #@es_index_settings_values = options[:es_index_settings_values]
-    #unless options[:create_warmer].nil?
-    #  @create_warmer = MultiJson.load(options[:create_warmer])
-    #end
 
   end
-  #
-  #def build_task_controllers
-  #  @some_option_names = %w[dump_index dump_file dump_mapping restore_file restore_index restore_mapping duplicate_file
-  #      duplicate_index duplicate_mapping cardinality card_file new_warmers_name warmers_index remove_warmer warmers
-  #      create_warmer execute_slow_queries clear_all_cache clear_fielddata clear_filter_cache settings_index
-  #      es_index_settings es_index_settings_values]
-  #  #puts "\n"
-  #  #puts @some_option_names.inspect
-  #  @tasks = %w[backup backup backup restore restore restore duplicate duplicate duplicate cardinality cardinality warmer
-  #              warmer warmer warmer warmer cache cache cache cache index_settings index_settings index_settings]
-  #  #puts @tasks.inspect
-  #  #@base_tasks_params = {:output_dir => @output_dir, :batch_size => @batch_size, :port => @port, :host => @host}
-  #
-  #  @task_controllers = [@dump_index, @dump_file, @dump_mapping, @restore_file, @restore_index, @restore_mapping, @duplicate_file,
-  #                       @duplicate_index, @duplicate_mapping, @cardinality, @card_file, @new_warmers_name,
-  #                       @warmers_index, @remove_warmer, @warmers, @create_warmer, @execute_slow_queries,
-  #                       @clear_all_cache, @clear_fielddata, @clear_filter_cache, @settings_index, @es_index_settings,
-  #                       @es_index_settings_values].zip(@some_option_names, @tasks)
-  #  puts "\n"
-  #  @task_controllers.each do |pairs|
-  #    puts pairs.inspect
-  #  end
-  #  @execute_tasks = {}
-  #end
-  #
-  #def add_task?(var, var_name, task_name)
-  #  unless var.nil? || var == []
-  #    @execute_tasks[task_name] ||= {}
-  #    @execute_tasks[task_name][var_name.to_sym] = var
-  #    #unless @execute_tasks[task_name].has_key?(:cache)
-  #    #  @execute_tasks[task_name].merge!(@base_tasks_params)
-  #    #end
-  #  end
-  #end
-  #
-  #
-  #def determine_tasks
-  #  @task_controllers.each do |var, var_sym, task|
-  #    add_task?(var, var_sym, task)
-  #  end
-  #  puts @execute_tasks.inspect
-  #end
 
   def determine_warmer_action(options = {})
     options[:index] = options[:warmers_index]
@@ -241,10 +163,8 @@ class Squirrel
   end
 
   def task_caller
-    #@execute_tasks.each do |task, options|
-    #  puts task
-    #  puts options.inspect
-      case @command #= task.to_sym
+    puts "Running #{@command}"
+      case @command
         when :restore
           @options[:index] = @options[:restore_index]
           @options[:mappings] = @options[:restore_mapping]
@@ -274,18 +194,9 @@ class Squirrel
           end
         else abort Settings.help("Must specify either backup, restore, duplicate, cardinality, warmer, replay, cache or index_settings.  Got <#{@command}> UPDATE THIS LINE!")
       end
-    #end
-  end
-
-  def run
-    #build_task_controllers
-    #determine_tasks
-    task_caller
   end
 end
 
-puts Settings.to_hash
-puts Settings.command_name
-Squirrel.new(Settings.command_name, Settings.to_hash).run
+Squirrel.new(Settings.command_name, Settings.to_hash).task_caller
 
 
