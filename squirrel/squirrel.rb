@@ -1,32 +1,3 @@
-#### This is the uber script the arguements you give it decide what happens
-## squirrel => Standard Query Ultracrepidate Iamatology Ruby Resource for Elasticsearch Labarum ##
-# example commands:
-# clear all caches
-#    ruby squirrel.rb --host=localhost --port=9200 --clear_all_cache=true
-# run slow log queries
-#    ruby squirrel.rb --host=localhost --port=9200 --execute_slow_queries=/var/log/elasticsearch/padraig.log
-# get backup an index aka generate a dumpfile
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --dump_index=flight_count_20130405 --batch_size=100 --dump_mapping=flight_count_20130405_mapping.json
-# get the cardinality of a dumpfile(card_file)
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --card_file=flight_count_20130405 --cardinality=cnt,metric
-# restore an index from a dumpfile
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --restore_file=flight_count_20130405.gz --restore_index=flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json --batch_size=100
-# duplicate files in an index from a dumpfile(duplicate_file)
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --duplicate_file=flight_count_20130405.gz --duplicate_index=eight_flight_count_20130405 --duplicate_mapping=flight_count_20130405_mapping.json --batch_size=100
-# add warmer
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --new_warmers_name=polite_warmer --warmers_index=flight_count_20130408 --create_warmer='{"sort" : ["_state", "flight_id","metric", "tb_h", "feature", "seconds", "base_feature", "metric_feature", "cnt", "_score"],"query":{"match_all":{}}}'
-# remove warmer
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130408
-# disable warmers
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --warmers=false --warmers_index=flight_count_20130405
-# enable warmers
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --warmers=false --warmers_index=flight_count_20130405
-# remove warmer
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130405
-# change index settings
-#    ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --settings_index=flight_count_20130405 --es_index_settings=refresh_interval,refresh_interval --es_index_settings_values=-1,0
-
-
 require "configliere"
 require "multi_json"
 require_relative "../squirrel/esbackup_stripped.rb"
@@ -35,8 +6,39 @@ require_relative "../squirrel/warmer_interface.rb"
 require_relative "../squirrel/clear_es_caches.rb"
 require_relative "../squirrel/change_es_index_settings.rb"
 
+doc = <<DOC
+This is the uber script the arguements you give it decide what happens
+squirrel => Standard Query Ultracrepidate Iamatology Ruby Resource for Elasticsearch Labarum ##
+  example commands:
+    clear all caches
+      ruby squirrel.rb --host=localhost --port=9200 --clear_all_cache=true
+    run slow log queries
+      ruby squirrel.rb --host=localhost --port=9200 --execute_slow_queries=/var/log/elasticsearch/padraig.log
+    get backup an index aka generate a dumpfile
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --dump_index=flight_count_20130405 --batch_size=100 --dump_mapping=flight_count_20130405_mapping.json
+    get the cardinality of a dumpfile(card_file)
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --card_file=flight_count_20130405 --cardinality=cnt,metric
+    restore an index from a dumpfile
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --restore_file=flight_count_20130405.gz --restore_index=flight_count_20130405 --restore_mapping=flight_count_20130405_mapping.json --batch_size=100
+    duplicate files in an index from a dumpfile(duplicate_file)
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --duplicate_file=flight_count_20130405.gz --duplicate_index=eight_flight_count_20130405 --duplicate_mapping=flight_count_20130405_mapping.json --batch_size=100
+    add warmer
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --new_warmers_name=polite_warmer --warmers_index=flight_count_20130408 --create_warmer='{"sort" : ["_state", "flight_id","metric", "tb_h", "feature", "seconds", "base_feature", "metric_feature", "cnt", "_score"],"query":{"match_all":{}}}'
+    remove warmer
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130408
+    disable warmers
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --warmers=false --warmers_index=flight_count_20130405
+    enable warmers
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --warmers=false --warmers_index=flight_count_20130405
+    remove warmer
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --remove_warmer=polite_warmer --warmers_index=flight_count_20130405
+    change index settings
+      ruby squirrel.rb --host=localhost --port=9200 --output_dir="." --settings_index=flight_count_20130405 --es_index_settings=refresh_interval,refresh_interval --es_index_settings_values=-1,0
+DOC
+
 Settings.use :commandline
-Settings.use :config_block
+Settings.use :commands
+Settings.description = doc
 Settings.define :output_dir,                                default: '',    description: 'Directory to put output, defaults to current path'
 Settings.define :dump_file,                                 default: nil,   description: 'The name of the dumpfile to use, default is nil'
 Settings.define :dump_index,                                default: nil,   description: 'Create dump of the given index, default is nil'
