@@ -204,7 +204,8 @@ class Replay
         total_took = execute_query(total_took, query, query_hash)
       end
     end
-    puts "All together the slow logs took: #{total_took}ms"
+    total_took /= 60000
+    puts "All together the slow logs took: #{total_took}min"
   end
 end
 
