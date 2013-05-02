@@ -187,7 +187,7 @@ class Replay
       puts query
       output(query, data, malformed=true)
     end
-    total_took + data['took'].to_i
+    total_took + data['new_duration'].to_i
   end
 
 ########################################################################################################################
