@@ -10,7 +10,7 @@ squirrel => Standard Query Ultracrepidate Iamatology Ruby Resource for Elasticse
     clear all caches
       ruby squirrel.rb cache --host=localhost --port=9200 --clear_all_cache=true
     run slow log queries
-      ruby squirrel.rb replay --host=localhost --port=9200 --execute_slow_queries=/var/log/elasticsearch/padraig.log
+      ruby squirrel.rb replay --host=localhost --port=9200 --preference=true,_primary_first --execute_slow_queries=/var/log/elasticsearch/padraig.log
     get backup an index aka generate a dumpfile
       ruby squirrel.rb backup --host=localhost --port=9200 --output_dir="." --dump_index=flight_count_20130405 --batch_size=100 --dump_mapping=flight_count_20130405_mapping.json
     get the cardinality of a dumpfile(card_file)
