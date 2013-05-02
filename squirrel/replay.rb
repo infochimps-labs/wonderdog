@@ -171,10 +171,10 @@ class Replay
         data['new_timestamp'] = Time.now
         data['new_start_time'] = Time.now.to_f * 1000
         cmd = build_curl_command_string(query, data)
-        puts cmd
+        #puts cmd
         curl_result = `#{cmd}`
-        puts curl_result
-        puts "\n"
+        #puts curl_result
+        #puts "\n"
         data['new_end_time'] = Time.now.to_f * 1000
         data['new_duration'] = data['new_end_time'] - data['new_start_time']
         data['original_dur'] = data['took']
