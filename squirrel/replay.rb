@@ -170,7 +170,6 @@ class Replay
       if data['search_type'] == "QUERY_THEN_FETCH"
         data['new_timestamp'] = Time.now
         data['new_start_time'] = Time.now.to_f * 1000
-        #puts "curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'"
         cmd = build_curl_command_string(query, data)
         #puts cmd
         curl_result = `#{cmd}`
