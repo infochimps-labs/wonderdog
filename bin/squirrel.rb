@@ -90,7 +90,8 @@ Settings.define_command :replay, :description => "Replay slow log queries" do |c
   cmd.define :port,                 :type => Integer, :default => nil,                      :description => 'The port to connect to on the host, defaults to nil'
   cmd.define :execute_slow_queries,                   :default => nil,                      :description => 'Execute the slow log queries in the provided log file,ie --execute_slow_log=/var/log/elasticsearch/padraig.log, defaults to nil'
   cmd.define :batch_size,           :type => Integer, :default => nil,                      :description => 'The number of lines to process at once, defaults to nil'
-  cmd.define :preference,           :type => Array,   :default => [true,"_primary_first"],   :description => 'Turn on/off preference and set it,ie --preference=true,_primary_first'
+  cmd.define :preference,           :type => Array,   :default => [true,"_primary_first"],  :description => 'Turn on/off preference and set it,ie --preference=true,_primary_first'
+  cmd.define :routing,              :type => Array,   :default => [false, ""],              :description => 'Add routing, ie --routing=true,flight_id'
 end
 Settings.define_command :index_settings, :description => "Change the index settings" do |cmd|
   cmd.define :host,                                       :default => nil,  :description => 'The host to connect to, defaults to nil'
