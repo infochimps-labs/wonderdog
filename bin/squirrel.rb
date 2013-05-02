@@ -1,7 +1,7 @@
 #! /usr/bin/ruby
 
 require "configliere"
-require_relative "squirrel_class.rb"
+require_relative "squirrel.rb"
 
 doc = <<DOC
 This is the uber script the arguements you give it decide what happens
