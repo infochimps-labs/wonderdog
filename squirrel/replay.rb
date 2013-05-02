@@ -172,15 +172,14 @@ class Replay
         data['new_start_time'] = Time.now.to_f * 1000
         #puts "curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'"
         cmd = build_curl_command_string(query, data)
-        puts cmd
+        #puts cmd
         curl_result = `#{cmd}`
-        puts curl_result
         #curl_result = `curl -s -XGET '#{@host}:#{@port}/#{data['index']}/_search/' -d '#{query}'`
-        #data['new_end_time'] = Time.now.to_f * 1000
-        #data['new_duration'] = data['new_end_time'] - data['new_start_time']
-        #data['original_dur'] = data['took']
-        #data = data.merge(JSON.parse(curl_result))
-        #output(query, data)
+        data['new_end_time'] = Time.now.to_f * 1000
+        data['new_duration'] = data['new_end_time'] - data['new_start_time']
+        data['original_dur'] = data['took']
+        data = data.merge(JSON.parse(curl_result))
+        output(query, data)
       else
         puts "error don't know search type, please throw an exception here"
       end
