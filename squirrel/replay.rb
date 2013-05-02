@@ -174,7 +174,7 @@ class Replay
         cmd = build_curl_command_string(query, data)
         puts cmd
         curl_result = `#{cmd}`
-        puts curl_result.inspect
+        puts curl_result
         #curl_result = `curl -s -XGET '#{@host}:#{@port}/#{data['index']}/_search/' -d '#{query}'`
         #data['new_end_time'] = Time.now.to_f * 1000
         #data['new_duration'] = data['new_end_time'] - data['new_start_time']
