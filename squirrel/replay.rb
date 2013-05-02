@@ -165,7 +165,7 @@ class Replay
 # Execute slow query from log                                                                                          #
 ########################################################################################################################
 
-  def execute_query(query, data)
+  def execute_query(total_took, query, data)
     if query.include? " " or query.index('(\\\'.*?\\\')').nil?
       if data['search_type'] == "QUERY_THEN_FETCH"
         data['new_timestamp'] = Time.now
@@ -174,7 +174,6 @@ class Replay
         cmd = build_curl_command_string(query, data)
         #puts cmd
         curl_result = `#{cmd}`
-        #curl_result = `curl -s -XGET '#{@host}:#{@port}/#{data['index']}/_search/' -d '#{query}'`
         data['new_end_time'] = Time.now.to_f * 1000
         data['new_duration'] = data['new_end_time'] - data['new_start_time']
         data['original_dur'] = data['took']
@@ -188,6 +187,7 @@ class Replay
       puts query
       output(query, data, malformed=true)
     end
+    total_took + data['took'].to_i
   end
 
 ########################################################################################################################
@@ -198,12 +198,14 @@ class Replay
     sl_regex = Regexp.new(('(slowlog\\.query)'), Regexp::IGNORECASE)
     metaArray = %w[took took_millis types search_type total_shards]
     header
+    total_took = 0
     File.readlines(@logfile).each do |line|
       if sl_regex.match(line)
         query, query_hash = parse_logline(line, metaArray)
-        execute_query(query, query_hash)
+        total_took = execute_query(total_took, query, query_hash)
       end
     end
+    puts "All together the slow logs took: #{total_took}ms"
   end
 end
 
