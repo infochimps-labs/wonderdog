@@ -154,8 +154,12 @@ class Replay
 
   def build_curl_command_string(query, data)
     base_uri = "'#{@host}:#{@port}/#{data['index']}/_search"
-    if @preference[0]
-      base_uri.concat("?preference=#{@preference[1]}")
+    if @preference[0] && @routing[0]
+      base_uri.concat("?preference=#{@preference[1]},routing=#{@routing[1]}")
+    elsif @preference[0] && !@routing[0]
+      base_uri.concat("?reference=#{@preference[1]}")
+    elsif @routing[0] && !@preference[0]
+      base_uri.concat("routing=#{@routing[1]}")
     end
     curl_command = "curl -s -XGET ".concat(base_uri)
     curl_command.concat("/' -d '#{query}'")
