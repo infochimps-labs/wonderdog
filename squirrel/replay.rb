@@ -158,7 +158,7 @@ class Replay
       base_uri.concat("preference=#{@preference[1]}")
     end
     curl_command = "curl -s -XGET ".concat(base_uri)
-    curl_command.concat("' -d '#{query}''")
+    curl_command.concat("' -d '#{query}'")
   end
 
 ########################################################################################################################
