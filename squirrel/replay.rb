@@ -153,7 +153,7 @@ class Replay
   end
 
   def build_curl_command_string(query, data)
-    base_uri = "''#{@host}:#{@port}/#{data['index']}/_search/"
+    base_uri = "'#{@host}:#{@port}/#{data['index']}/_search/"
     if @preference[0]
       base_uri.concat("preference=#{@preference[1]}''")
     end
