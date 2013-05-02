@@ -120,11 +120,12 @@ end
 ########################################################################################################################
 class Replay
 
-  def initialize(logfile, host, port, preference)
+  def initialize(logfile, host, port, preference, routing)
     @logfile = logfile
     @host = host
     @port = port
     @preference = preference
+    @routing = routing
   end
 
   def header()
