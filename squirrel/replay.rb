@@ -152,7 +152,7 @@ class Replay
     end
   end
 
-  def build_curl_command_string()
+  def build_curl_command_string(data)
     base_uri = "#{@host}:#{@port}/#{data['index']}/_search/"
     if @preference[0]
       base_uri.concat(@preference[1])
@@ -170,7 +170,7 @@ class Replay
         data['new_timestamp'] = Time.now
         data['new_start_time'] = Time.now.to_f * 1000
         #puts "curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'"
-        build_curl_command_string
+        build_curl_command_string(data)
         #curl_result = `curl -s -XGET '#{@host}:#{@port}/#{data['index']}/_search/' -d '#{query}'`
         #data['new_end_time'] = Time.now.to_f * 1000
         #data['new_duration'] = data['new_end_time'] - data['new_start_time']
