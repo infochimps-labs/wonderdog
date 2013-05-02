@@ -158,7 +158,7 @@ class Replay
       base_uri.concat("preference=#{@preference[1]}''")
     end
     curl_command = "curl -s -XGET ".concat(base_uri)
-    puts curl_command.concat("' -d '#{query}''")
+    curl_command.concat("' -d '#{query}''")
   end
 
 ########################################################################################################################
@@ -171,13 +171,14 @@ class Replay
         data['new_timestamp'] = Time.now
         data['new_start_time'] = Time.now.to_f * 1000
         #puts "curl -s -XGET #{Settings.host}:#{Settings.port}/#{data['index']}/_search/ -d '#{query}'"
-        build_curl_command_string(query, data)
+        cmd = build_curl_command_string(query, data)
+        curl_result = %x(#{cmd})
         #curl_result = `curl -s -XGET '#{@host}:#{@port}/#{data['index']}/_search/' -d '#{query}'`
-        #data['new_end_time'] = Time.now.to_f * 1000
-        #data['new_duration'] = data['new_end_time'] - data['new_start_time']
-        #data['original_dur'] = data['took']
-        #data = data.merge(JSON.parse(curl_result))
-        #output(query, data)
+        data['new_end_time'] = Time.now.to_f * 1000
+        data['new_duration'] = data['new_end_time'] - data['new_start_time']
+        data['original_dur'] = data['took']
+        data = data.merge(JSON.parse(curl_result))
+        output(query, data)
       else
         puts "error don't know search type, please throw an exception here"
       end
