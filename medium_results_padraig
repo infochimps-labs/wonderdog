@@ -1,0 +1,49 @@
+Running replay
+
+current_timestamp	original_timestamp	es_duration(ms)	new_duration(ms)	clock_time_duration(ms)	node	index	query_fragment
+
+current_timestamp	original_timestamp	es_duration(ms)	new_duration(ms)	clock_time_duration(ms)	node	index	query_fragment
+2013-05-03 18:32:24 +0000	2013-03-29 02:15:53,898	520.1ms	255	311	padraig-search-0	browser_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:32:24 +0000	2013-03-29 02:15:54,848	1.4s	600	636	padraig-search-0	flight_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:32:25 +0000	2013-03-29 02:15:54,897	1.5s	546	584	padraig-search-0	flight_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:32:25 +0000	2013-03-29 02:16:00,296	6.9s	7795	7832	padraig-search-0	placement_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:32:33 +0000	2013-03-29 02:16:00,437	7s	6705	6747	padraig-search-0	placement_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:32:40 +0000	2013-03-29 02:16:05,408	12s	25336	25374	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:33:05 +0000	2013-03-29 02:16:05,542	12.1s	21673	21711	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:33:27 +0000	2013-03-29 02:16:22,921	1.9s	6625	6685	padraig-search-0	placement_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:33:34 +0000	2013-03-29 02:16:22,973	2s	6717	6760	padraig-search-0	placement_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:33:40 +0000	2013-03-29 02:16:26,574	5.6s	21212	21248	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:34:02 +0000	2013-03-29 02:16:26,574	5.5s	21309	21354	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:34:23 +0000	2013-03-29 02:16:30,698	1.8s	6697	6741	padraig-search-0	placement_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:34:30 +0000	2013-03-29 02:16:30,804	1.9s	6676	6736	padraig-search-0	placement_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:34:36 +0000	2013-03-29 02:16:34,568	5.6s	21115	21149	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:34:58 +0000	2013-03-29 02:16:34,637	5.7s	21365	21403	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:35:19 +0000	2013-03-29 03:05:53,872	679.6ms	121	157	padraig-search-0	browser_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:19 +0000	2013-03-29 03:05:54,131	938ms	66	102	padraig-search-0	browser_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:19 +0000	2013-03-29 03:05:54,855	1.6s	406	441	padraig-search-0	flight_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:20 +0000	2013-03-29 03:05:55,240	2s	260	303	padraig-search-0	flight_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:20 +0000	2013-03-29 03:05:56,145	2.9s	657	697	padraig-search-0	interaction_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:21 +0000	2013-03-29 03:05:56,288	3s	444	490	padraig-search-0	interaction_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:21 +0000	2013-03-29 03:05:56,318	3.1s	746	811	padraig-search-0	ad_tag_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:22 +0000	2013-03-29 03:05:56,619	3.4s	460	508	padraig-search-0	ad_tag_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:23 +0000	2013-03-29 03:05:56,755	3.5s	1055	1091	padraig-search-0	creative_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:24 +0000	2013-03-29 03:05:57,082	3.8s	639	676	padraig-search-0	creative_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:25 +0000	2013-03-29 03:05:58,424	5.2s	2910	2956	padraig-search-0	placement_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:28 +0000	2013-03-29 03:05:58,499	5.3s	1995	2041	padraig-search-0	placement_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:35:30 +0000	2013-03-29 03:06:13,272	20s	34998	35038	padraig-search-0	site_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+
+current_timestamp	original_timestamp	es_duration(ms)	new_duration(ms)	clock_time_duration(ms)	node	index	query_fragment
+2013-05-03 18:36:05 +0000	2013-03-29 03:06:13,378	20.1s	25515	25552	padraig-search-0	site_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
+2013-05-03 18:36:30 +0000	2013-03-29 05:01:05,277	7s	7s	41	padraig-search-0	low_precision	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:36:30 +0000	2013-03-29 05:01:05,339	7s	7s	43	padraig-search-0	low_precision	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:36:30 +0000	2013-03-29 05:03:23,505	4.6s	4.6s	30	padraig-search-0	low_precision	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:36:30 +0000	2013-03-29 05:03:23,610	4.7s	4.7s	30	padraig-search-0	low_precision	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:36:30 +0000	2013-03-29 05:03:54,597	6.8s	6.8s	31	padraig-search-0	low_precision	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:36:30 +0000	2013-03-29 05:03:54,662	6.9s	6.9s	34	padraig-search-0	low_precision	{"query":{"constant_score":{"filter":{"range":{"tb
+2013-05-03 18:36:30 +0000	2013-03-29 05:20:02,276	4.9s	1846	1884	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"term":{"fli
+2013-05-03 18:36:32 +0000	2013-03-29 05:20:02,311	5s	1845	1889	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"term":{"fli
+2013-05-03 18:36:34 +0000	2013-03-29 05:25:13,568	2.4s	2.4s	37	padraig-search-0	low_precision	{"query":{"constant_score":{"filter":{"term":{"fli
+2013-05-03 18:36:34 +0000	2013-03-29 05:25:13,568	2.4s	2.4s	37	padraig-search-0	low_precision	{"query":{"constant_score":{"filter":{"term":{"fli
+2013-05-03 18:36:34 +0000	2013-03-29 05:25:59,835	4.2s	1835	1874	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"term":{"fli
+2013-05-03 18:36:36 +0000	2013-03-29 05:25:59,865	4.2s	1838	1882	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"term":{"fli
+All together the slow logs took: 4.232433333333334min
