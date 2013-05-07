@@ -48,7 +48,7 @@ class WarmIndices < Wukong::Runner
 
   def run
     indices.each do |index|
-      fields = mappings[index]['properties'].keys rescue abort("The provided index <#{index}> was not found in config/mapping.yml")
+      fields = mappings[index]['properties'].keys rescue abort("The provided index <#{index}> was not found in config/mappings.yml")
       uri    = warmer_uri(index)
       body   = sorted_query(fields)
       puts "Creating warmer for index #{index}"
