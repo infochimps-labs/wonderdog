@@ -65,7 +65,7 @@ for foo in ad_tag_count_20130405 ad_tag_count_20130408 browser_count_20130405 br
 # get cluster health
 curl -XGET 'http://localhost:9200/_cluster/health'
 # get cluster health for all nodes
-for foo in 0 1 2 3 4 5 6 7; do echo 'getting cluster health for node number '$foo''; curl -XGET 'http://projectes-search-'$foo'.test.chimpy.us:9200/_cluster/health'; echo; done;
+for foo in 0 1 2 3 4 5 6 7; do echo 'getting cluster health for node number '$foo''; curl -XGET 'http://projectes-search-'$foo'.test.chimpy.us:9200/_cluster/health'; done; echo;
 
 #proxy to storm spongecell
 ssh -L 8080:10.151.84.59:8080 23.20.7.243
