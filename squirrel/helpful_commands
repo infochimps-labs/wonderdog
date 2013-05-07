@@ -64,7 +64,8 @@ for foo in ad_tag_count_20130405 ad_tag_count_20130408 browser_count_20130405 br
 for foo in ad_tag_count_20130405 ad_tag_count_20130408 browser_count_20130405 browser_count_20130408 cache creative_count_20130405 creative_count_20130408 double_node_flight_count_20130405 eight_flight_count_20130405 flight_count_20130405 flight_count_20130408 flight_count_with_routing four_flight_count_20130405 interaction_count_20130405 interaction_count_20130408 item_count_20130405 item_count_20130408 mountweasel_20130408 parse_exception_20130405 parse_exception_20130405 parse_exception_20130408 placement_count_20130405 placement_count_20130408 placement_count_routing_20130420 signal_value_count_20130405 signal_value_count_20130408 site_count_20130405 site_count_20130408 ten_flight_count_20130405 test test_flight_count three_flight_count_20130405 triple_flight_count_20130405 ; do echo -n -e "$foo\t" ; curl -XPOST 'curl -XGET localhost:9200/'$foo'/_warmer/' ; done
 # get cluster health
 curl -XGET 'http://localhost:9200/_cluster/health'
-
+# get cluster health for all nodes
+for foo in 0 1 2 3 4 5 6 7; do echo 'getting cluster health for node number '$foo''; curl -XGET 'http://projectes-search-'$foo'.test.chimpy.us:9200/_cluster/health'; echo; done;
 
 #proxy to storm spongecell
 ssh -L 8080:10.151.84.59:8080 23.20.7.243
