@@ -67,6 +67,10 @@ curl -XGET 'http://localhost:9200/_cluster/health'
 # get cluster health for all nodes
 for foo in 0 1 2 3 4 5 6 7; do echo 'getting cluster health for node number '$foo''; curl -XGET 'http://projectes-search-'$foo'.test.chimpy.us:9200/_cluster/health'; done; echo;
 
+#execute command to all nodes via ssh
+for foo in 0 1 2 3 4 5 6 7; do ssh maphysics@projectes-search-$foo.test.chimpy.us sudo service elasticsearch stop <&-; echo; done;
+for foo in 107.21.147.228 23.20.73.96 50.17.6.229 50.17.44.36 54.224.137.196 54.242.92.135 54.224.228.20 54.242.147.154; do ssh ubuntu@$foo -i knife/credentials/ec2_keys/projectes.pem 'sudo service elasticsearch stop' <&-; echo; done;
+
 #proxy to storm spongecell
 ssh -L 8080:10.151.84.59:8080 23.20.7.243
 #machine to ssh to to restart storm topology
