@@ -1,0 +1,327 @@
+ad_tag_count:
+  _all:
+    enabled: false
+  _routing:
+    path: ad_tag_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    ad_tag_id:
+      type: integer
+    creative_id:
+      type: integer
+    pl_test:
+      index: not_analyzed
+      type: string
+    metric:
+      index: not_analyzed
+      type: string
+    tb_h:
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+    base_feature:
+      index: not_analyzed
+      type: string
+    seconds:
+      type: integer
+flight_count:
+  _all:
+    enabled: false
+  _routing:
+    path: flight_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    flight_id:
+      type: integer
+    pl_test:
+      index: not_analyzed
+      type: string
+    metric:
+      index: not_analyzed
+      type: string
+    tb_h:
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+    base_feature:
+      index: not_analyzed
+      type: string
+    seconds:
+      type: integer
+    metric_feature:
+      index: not_analyzed
+      type: string
+creative_count:
+  _all:
+    enabled: false
+  _routing:
+    path: creative_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    creative_id:
+      type: integer
+    pl_test:
+      index: not_analyzed
+      type: string
+    metric:
+      index: not_analyzed
+      type: string
+    tb_h:
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+    base_feature:
+      index: not_analyzed
+      type: string
+    seconds:
+      type: integer
+item_count:
+  _all:
+    enabled: false
+  _routing:
+    path: flight_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    item_id:
+      type: integer
+    pl_test:
+      index: not_analyzed
+      type: string
+    flight_id:
+      type: integer
+    metric:
+      index: not_analyzed
+      type: string
+    tb_h:
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+    base_feature:
+      index: not_analyzed
+      type: string
+signal_value_count:
+  _all:
+    enabled: false
+  _routing:
+    path: flight_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    signal_value_id:
+      index: not_analyzed
+      type: string
+    flight_id:
+      type: integer
+    pl_test:
+      index: not_analyzed
+      type: string
+    metric:
+      index: not_analyzed
+      type: string
+    tb_h:
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+    base_feature:
+      index: not_analyzed
+      type: string
+placement_count:
+  _all:
+    enabled: false
+  _routing:
+    path: flight_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    ad_tag_id:
+      type: integer
+    flight_id:
+      type: integer
+    ext_pl_id:
+      index: not_analyzed
+      type: string
+    creative_id:
+      type: integer
+    metric:
+      index: not_analyzed
+      type: string
+    tb_h:
+      index: not_analyzed
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+    detail:
+      index: not_analyzed
+      type: string
+    pl_composite:
+      index: not_analyzed
+      type: string
+site_count:
+  _all:
+    enabled: false
+  _routing:
+    path: flight_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    ad_tag_id:
+      type: integer
+    flight_id:
+      type: integer
+    ext_site_id:
+      index: not_analyzed
+      type: string
+    creative_id:
+      type: integer
+    pl_test:
+      index: not_analyzed
+      type: string
+    metric:
+      index: not_analyzed
+      type: string
+    tb_h:
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+    site_composite:
+      index: not_analyzed
+      type: string
+interaction_count:
+  _all:
+    enabled: false
+  _routing:
+    path: flight_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    ad_tag_id:
+      type: integer
+    pl_test:
+      index: not_analyzed
+      type: string
+    flight_id:
+      type: integer
+    creative_id:
+      type: integer
+    tb_h:
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+    base_feature:
+      index: not_analyzed
+      type: string
+    detail:
+      index: not_analyzed
+      type: string
+    datax:
+      index: not_analyzed
+      type: string
+browser_count:
+  _all:
+    enabled: false
+  _routing:
+    path: flight_id
+  dynamic: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    cnt:
+      type: integer
+    flight_id:
+      type: integer
+    pl_test:
+      index: not_analyzed
+      type: string
+    browser_ua:
+      index: not_analyzed
+      type: string
+    tb_h:
+      type: date
+    feature:
+      index: not_analyzed
+      type: string
+parse_exception:
+  dynamic: false
+  _all:
+    enabled: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    ad_tag_id:
+      type: integer
+    cnt:
+      type: integer
+    error_code:
+      type: string
+      index: not_analyzed
+    tb_h:
+      type: date
+mountweasel:
+  dynamic: false
+  _all:
+    enabled: false
+  properties:
+    _state:
+      type: string
+      index: "no"
+      store: "yes"
+    tb_h:
+      type: date
+    cnt:
+      type: integer
