@@ -23,6 +23,9 @@ Commands include:
     optimize                         Optimizes the specified INDEX to (-s) number of segments
     snapshot                         Snapshots the specified INDEX to the gateway
     segments                         Returns the segment information. Requires ElasticSearch v
+    aliases                          Returns a list of Index/Alias pairs
+    ialiases                         Returns a list of Alias/Index pairs
+    count                            The number of documents in an index
     mapping
     set_replication
     search
@@ -89,7 +92,7 @@ class ESTool
   
   def status()     shell_response(File.join(options.index, "_status?")) ; end
 
-  def list()       status["indices"].keys ; end
+  def list()       status["indices"].keys.sort ; end
 
   def health()     shell_response("_cluster/health?") ; end
 
@@ -111,6 +114,24 @@ class ESTool
   def segments()   shell_response(File.join(options.index, "_segments")) ; end
 
   def mapping()    shell_response(File.join(options.index, "_mapping")) ; end
+  
+  def aliases()    shell_response('_aliases?').sort.inject({}){ |hsh, (index, info)| hsh[index] = info['aliases'].keys ; hsh } ; end
+  
+  def ialiases() 
+    inverse = Hash.new{ |hsh, key| hsh[key] = [] }
+    aliases.each{ |idx, als| als.each{ |a| inverse[a] << idx } }
+    inverse
+  end
+
+  # estool status -r | ruby -rjson -e 'puts JSON.parse($stdin.read)["indices"]["item_count_legacy"]["docs"]'
+  # {"num_docs"=>187749, "max_doc"=>187749, "deleted_docs"=>0}
+  def count()
+    if options.index == '_all'
+      status['indices'].inject({}){ |hsh, (index, info)| hsh[index] = info['docs']['num_docs'] ; hsh }
+    else
+      { options.index => shell_response(File.join(options.index, '_count'))['count'] }
+    end
+  end
 
   # curl -s -XPUT http://host:port/index/_settings -d '{"index":{"number_of_replicas":num}}'
   def set_replication() { "error" => "method not yet implemented" }; end
