@@ -105,7 +105,10 @@ module Wukong
         
         super() + [].tap do |o|
           if (reads_from_elasticsearch? || writes_to_elasticsearch?)
-            o << java_opt('es.config', settings[:es_config])
+            o << java_opt('es.config',                    settings[:es_config])
+            o << java_opt('elasticsearch.transport',      settings[:es_transport])
+            o << java_opt('elasticsearch.transport.host', settings[:es_transport_host]) if settings[:es_transport] && settings[:es_transport_host]
+            o << java_opt('elasticsearch.transport.port', settings[:es_transport_port]) if settings[:es_transport] && settings[:es_transport_port]
           end
           
           if reads_from_elasticsearch?
