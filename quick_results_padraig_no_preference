@@ -1,8 +1,0 @@
-Running replay
-
-current_timestamp	original_timestamp	es_duration(ms)	new_duration(ms)	clock_time_duration(ms)	node	index	query_fragment
-2013-05-03 18:46:20 +0000	2013-03-29 02:16:05,408	12s	25822	25872	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"range":{"tb
-2013-05-03 18:46:46 +0000	2013-03-29 02:16:05,542	12.1s	22088	22124	padraig-search-0	site_count	{"query":{"constant_score":{"filter":{"range":{"tb
-2013-05-03 18:47:08 +0000	2013-03-29 03:06:13,272	20s	31733	31788	padraig-search-0	site_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
-2013-05-03 18:47:40 +0000	2013-03-29 03:06:13,378	20.1s	27235	27274	padraig-search-0	site_count	{"query":{"match_all":{}},"facets":{"igna":{"stati
-All together the slow logs took: 1.7843min
