@@ -71,7 +71,7 @@ public class ElasticSearchStreamingInputFormat<K, V> implements InputFormat<K, V
     private static final String ES_TRANSPORT_HOST         = "localhost";
 
     private static final String ES_TRANSPORT_PORT_OPT     = "elasticsearch.transport.port";
-    private static final String ES_TRANSPORT_PORT         = "9200";
+    private static final String ES_TRANSPORT_PORT         = "9300";
     
     private TransportClient client;
 
@@ -197,7 +197,7 @@ public class ElasticSearchStreamingInputFormat<K, V> implements InputFormat<K, V
 	    request.setQuery(queryJSON);
 	}
         SearchResponse response = request.execute().actionGet();
-        this.numHits = response.hits().totalHits();
+        this.numHits = response.getHits().totalHits();
 
 	LOG.info("Ran query: "+String.valueOf(numHits)+" hits");
     }

@@ -28,7 +28,7 @@ module Wukong
       settings.define(:es_query,          :description => "Query to use when defining input splits for ElasticSearch input",    :wukong_hadoop => true)
       settings.define(:es_transport,      :description => "Use a transport client to an existing node instead of spinning up a new node", :default => true, type: :boolean, :wukong_hadoop => true)
       settings.define(:es_transport_host, :description => "Host of existing node for transport client", default: 'localhost', :wukong_hadoop => true)
-      settings.define(:es_transport_port, :description => "Port of existing node for transport client", default: 9200, type: Integer, :wukong_hadoop => true)
+      settings.define(:es_transport_port, :description => "Port of existing node for transport client", default: 9300, type: Integer, :wukong_hadoop => true)
     end
 
     # Boot Wonderdog with the given `settings` in the given `dir`.

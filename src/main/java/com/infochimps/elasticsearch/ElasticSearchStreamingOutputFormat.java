@@ -54,7 +54,7 @@ public class ElasticSearchStreamingOutputFormat<K, V> implements OutputFormat<K,
     private static final String ES_TRANSPORT_HOST         = "localhost";
 
     private static final String ES_TRANSPORT_PORT_OPT     = "elasticsearch.transport.port";
-    private static final String ES_TRANSPORT_PORT         = "9200";
+    private static final String ES_TRANSPORT_PORT         = "9300";
     
     // Elasticsearch internal settings required to make a client
     // connection.

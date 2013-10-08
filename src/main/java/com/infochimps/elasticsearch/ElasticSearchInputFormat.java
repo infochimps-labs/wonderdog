@@ -133,7 +133,7 @@ public class ElasticSearchInputFormat extends InputFormat<Text, Text> implements
             .setSize(requestSize)
             .execute()
             .actionGet();
-        this.numHits = response.hits().totalHits();
+        this.numHits = response.getHits().totalHits();
         if(numSplits > numHits) numSplits = numHits; // This could be bad
         this.numSplitRecords = (numHits/numSplits);
     }
@@ -206,7 +206,7 @@ public class ElasticSearchInputFormat extends InputFormat<Text, Text> implements
                 .setQuery(QueryBuilders.queryString(queryString))                
                 .execute()
                 .actionGet();
-            return response.hits().iterator();
+            return response.getHits().iterator();
         }
         
         @Override
