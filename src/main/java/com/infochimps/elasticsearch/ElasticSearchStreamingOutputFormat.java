@@ -43,6 +43,9 @@ public class ElasticSearchStreamingOutputFormat<K, V> implements OutputFormat<K,
 	
     private static final String ES_ID_FIELD_OPT = "elasticsearch.output.id.field";
     private static final String ES_ID_FIELD     = "_id";
+
+    private static final String ES_ROUTING_FIELD_OPT = "elasticsearch.output.routing.field";
+    private static final String ES_ROUTING_FIELD     = "_routing";
 	
     private static final String ES_BULK_SIZE_OPT     = "elasticsearch.output.bulk_size";
     private static final String ES_BULK_SIZE         = "1000";
@@ -71,13 +74,14 @@ public class ElasticSearchStreamingOutputFormat<K, V> implements OutputFormat<K,
 	String  indexFieldName     = conf.get(ES_INDEX_FIELD_OPT,    ES_INDEX_FIELD);
 	String  mappingFieldName   = conf.get(ES_MAPPING_FIELD_OPT,  ES_MAPPING_FIELD);
 	String  idFieldName        = conf.get(ES_ID_FIELD_OPT,       ES_ID_FIELD);
+	String  routingFieldName   = conf.get(ES_ROUTING_FIELD_OPT,  ES_ROUTING_FIELD);
 	Integer bulkSize           = Integer.parseInt(conf.get(ES_BULK_SIZE_OPT, ES_BULK_SIZE));
 	boolean esTransport        = new Boolean(conf.get(ES_TRANSPORT_OPT, ES_TRANSPORT));
 	String  esTransportHost    = conf.get(ES_TRANSPORT_HOST_OPT, ES_TRANSPORT_HOST);
 	Integer esTransportPort    = Integer.parseInt(conf.get(ES_TRANSPORT_PORT_OPT, ES_TRANSPORT_PORT));
 
         return (RecordWriter) new ElasticSearchStreamingRecordWriter(defaultIndexName, defaultMappingName,
-								     indexFieldName, mappingFieldName, idFieldName,
+								     indexFieldName, mappingFieldName, idFieldName, routingFieldName,
 								     bulkSize,
 								     esTransport, esTransportHost, esTransportPort);
     }

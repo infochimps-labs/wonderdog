@@ -26,6 +26,7 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.ExceptionsHelper;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -40,6 +41,7 @@ class ElasticSearchStreamingRecordWriter<K, V> implements RecordWriter<K, V> {
     private String  indexFieldName;
     private String  mappingFieldName;
     private String  idFieldName;
+    private String  routingFieldName;
     private Integer bulkSize;
 
     // Bookkeeping
@@ -63,12 +65,13 @@ class ElasticSearchStreamingRecordWriter<K, V> implements RecordWriter<K, V> {
     // == Lifecycle ==
     // 
 
-    public ElasticSearchStreamingRecordWriter(String defaultIndexName, String defaultMappingName, String indexFieldName, String mappingFieldName, String idFieldName, Integer bulkSize, boolean transport, String transportHost, Integer transportPort) {
+    public ElasticSearchStreamingRecordWriter(String defaultIndexName, String defaultMappingName, String indexFieldName, String mappingFieldName, String idFieldName, String routingFieldName, Integer bulkSize, boolean transport, String transportHost, Integer transportPort) {
 	this.defaultIndexName   = defaultIndexName;
 	this.defaultMappingName = defaultMappingName;
 	this.indexFieldName     = indexFieldName;
 	this.mappingFieldName   = mappingFieldName;
 	this.idFieldName        = idFieldName;
+	this.routingFieldName   = routingFieldName;
 	this.bulkSize           = bulkSize;
 	this.transport          = transport;
 	this.transportHost      = transportHost;
@@ -150,12 +153,18 @@ class ElasticSearchStreamingRecordWriter<K, V> implements RecordWriter<K, V> {
 
     private void index(String json) throws IOException {
 	Map<String, Object> record = mapper.readValue(json, Map.class);
+	IndexRequest request = null;
 	if (record.containsKey(idFieldName)) {
 	    Object idValue = record.get(idFieldName);
-	    currentRequest.add(Requests.indexRequest(indexNameForRecord(record)).id(String.valueOf(idValue)).type(mappingNameForRecord(record)).create(false).source(json));
+	     request = Requests.indexRequest(indexNameForRecord(record)).id(String.valueOf(idValue)).type(mappingNameForRecord(record)).create(false).source(json);
 	} else {
-	    currentRequest.add(Requests.indexRequest(indexNameForRecord(record)).type(mappingNameForRecord(record)).source(json));
+	    request = Requests.indexRequest(indexNameForRecord(record)).type(mappingNameForRecord(record)).source(json);
 	}
+	if (record.containsKey(routingFieldName)) {
+	    Object routingValue = record.get(routingFieldName);
+		request.routing(String.valueOf(routingValue));
+	}
+	currentRequest.add(request);
     }
 
     private String indexNameForRecord(Map<String, Object> record) {
