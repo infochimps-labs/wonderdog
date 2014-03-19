@@ -21,7 +21,7 @@ RSpec.configure do |config|
 
   def hadoop_runner *args, &block
     runner(Wukong::Hadoop::HadoopRunner, 'wu-hadoop', *args) do
-      stub!(:execute_command!)
+      stub(:execute_command!)
       instance_eval(&block) if block_given?
     end
   end
