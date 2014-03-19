@@ -8,7 +8,7 @@ describe Wukong::Elasticsearch::HadoopInvocationOverride do
   let(:es_complex) { hadoop_runner('regexp',  'count', input: 'es://the_index/the_map', output: 'es:///the_index/the_map', es_query: '{"hi": "there"}', es_request_size: 1000, es_index_field: 'ID', map_speculative: true, reduce_speculative: true) }
 
   context "passing necessary jars to Hadoop streaming" do
-    before  { Dir.stub!(:[]).and_return(["/lib/dir/elasticsearch.jar"], ["/lib/dir/wonderdog.jar"]) }
+    before  { Dir.stub(:[]).and_return(["/lib/dir/elasticsearch.jar"], ["/lib/dir/wonderdog.jar"]) }
     context "when not given explicit jars" do
       context "and not interacting with Elasticsearch" do
         it "doesn't add jars" do
