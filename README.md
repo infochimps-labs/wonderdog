@@ -113,6 +113,31 @@ changing the URI for `input` or `output` to use a scheme of `es`.  The
 "host" of the URI is the index in ElasticSearch and the "path" the
 type.
 
+### Embedded vs. Transport Nodes
+
+Wonderdog provides two different ways of connnecting to ElasticSearch
+from within a Hadoop task.
+
+* By default, each map task will spin up a
+  [transport client](http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/client.html)
+  which will attempt to connect to some ElasticSearch webnode.  By
+  default it will look for this webnode on the same machine as the
+  task itself is running on.  This is convenient in the common case
+  when each Hadoop tasktracker is also an ElasticSearch webnode
+  (datanodes may, of course, live elsewhere).
+
+* Each map task can also be configured to spin up its own
+  [embedded ElasticSearch node](http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/client.html#node-client)
+  which directly connects to an ElasticSearch cluster.
+
+The following options control this behavior:
+
+* `--es_transport` -- Use a transport client instead of an embedded node. True by default.
+* `--es_transport_host` -- When using a transport client, the host of
+  the ElasticSearch webnode to connect to.  Defaults to `localhost`.
+* `--es_transport_port` -- When using a transport client, the port of
+  the ElasticSearch webnode to connect to.  Defaults to `9300`.
+
 ### Writing data to ElasticSearch
 
 Here's an example which would write all its output data to the index
@@ -172,30 +197,49 @@ batch writes sent to ElasticSearch (default: 1000).  Increasing this
 number can be appropriate and lead to higher throughput in some
 situations.
 
-#### Embedded vs. Transport Nodes
+### Reading data from ElasticSearch
 
-Wonderdog provides two different ways of connnecting to ElasticSearch
-from within a Hadoop task.
+Here's an example which would read all its input data from the index
+`twitter` in the type `tweet`:
 
-* By default, each map task will spin up a
-  [transport client](http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/client.html)
-  which will attempt to connect to some ElasticSearch webnode.  By
-  default it will look for this webnode on the same machine as the
-  task itself is running on.  This is convenient in the common case
-  when each Hadoop tasktracker is also an ElasticSearch webnode
-  (datanodes may, of course, live elsewhere).
+```
+$ wu hadoop my_job.rb --input=es://twitter/tweet --output=/some/hdfs/output/path
+```
 
-* Each map task can also be configured to spin up its own
-  [embedded ElasticSearch node](http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/client.html#node-client)
-  which directly connects to an ElasticSearch cluster.
+This would read in every single `tweet` record.  This can be
+customized using the full power of ElasticSearch by providing an
+arbitrary ElasticSearch JSON query via the `--es_query` option.
+Wonderdog will run the query at Hadoop job submission time and use the
+result-set as the input data.
 
-The following options control this behavior:
+The result-set will be presented to Hadoop as newline-delimited,
+JSON-formatted data.
 
-* `--es_transport` -- Use a transport client instead of an embedded node. True by default.
-* `--es_transport_host` -- When using a transport client, the host of
-  the ElasticSearch webnode to connect to.  Defaults to `localhost`.
-* `--es_transport_port` -- When using a transport client, the port of
-  the ElasticSearch webnode to connect to.  Defaults to `9300`.
+Here's an example, which would capture only tweets about Chicago:
+
+```
+$ wu hadoop my_job.rb --input=es://twitter/tweet --output=/some/hdfs/output/path --es_query='{"query": {"match":{"text": "Chicago"}}}'
+```
+
+#### Optimization
+
+Wonderdog uses ElasticSearch's
+[scroll API](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-scroll.html)
+to fetch data from ElasticSearch. There are several options which can
+be used to tune the usage of this API for better performance:
+
+* `--es_input_splits` -- the number of input splits to create
+* `--es_request_size` -- the number of documents to request at a time (defaults to 50)
+* `--es_scroll_timeout` -- the amount of time to wait on each scroll / longest running map task (defaults to 5 minutes)
+
+The larger the dataset and the fewer the input splits, the larger the
+data that needs to be processed (and hence scrolled through) within
+each task, the longer the scroll timeout should be set for.
+Essentially, no task should take longer to complete than the scroll
+timeout.
+
+It's recommended to read data out of ElasticSearch into a temporary
+copy in HDFS which can then be used for more intensive processing.
 
 <a name="pig">
 # Pig
