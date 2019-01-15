@@ -115,7 +115,7 @@ type.
 
 ### Embedded vs. Transport Nodes
 
-Wonderdog provides two different ways of connnecting to ElasticSearch
+Wonderdog provides two different ways of connecting to ElasticSearch
 from within a Hadoop task.
 
 * By default, each map task will spin up a
