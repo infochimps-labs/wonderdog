@@ -61,12 +61,12 @@
 
     <repository>
       <id>sonatype-releases</id>
-      <url>http://oss.sonatype.org/content/repositories/releases</url>
+      <url>https://oss.sonatype.org/content/repositories/releases</url>
     </repository>
 
     <repository>
       <id>codehaus</id>
-      <url>http://repository.codehaus.org/org/codehaus</url>
+      <url>https://repository.codehaus.org/org/codehaus</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
